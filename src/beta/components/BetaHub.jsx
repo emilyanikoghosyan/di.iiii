@@ -128,36 +128,35 @@ export default function BetaHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
 
     return (
         <main className="beta-hub">
-            <section className="beta-hub-hero">
-                <div className="beta-hub-wordmark">
-                    <span className="beta-hub-di-sq" />
-                    <span className="beta-hub-di-sq" />
-                    <span className="beta-hub-di-sq" />
-                </div>
-                <h1>di.i studio_</h1>
-                <p className="beta-hub-tagline">node workspace · space {spaceId}</p>
-                <div className="beta-hub-actions">
-                    <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Project title" />
-                    <button type="button" onClick={handleCreate} disabled={isBusy}>Create New Project</button>
-                    <label className="beta-file-button">
-                        <input type="file" accept=".zip,.json,application/zip,application/json" onChange={handleImport} />
-                        Import V1 Local Scene
-                    </label>
-                    <button type="button" onClick={() => window.location.assign(buildAppSpacePath(spaceId))}>
-                        Open public route
-                    </button>
-                    <button type="button" onClick={() => window.location.assign(buildStudioHubPath(spaceId))}>
-                        Open Studio workspace
-                    </button>
-                    <button type="button" onClick={() => window.location.assign(buildPreferencesPath(spaceId))}>
-                        Open admin
-                    </button>
-                </div>
-            </section>
+            <div className="beta-hub-layout">
+                <header className="beta-hub-header">
+                    <div className="beta-hub-wordmark">
+                        <span className="beta-hub-di-sq" />
+                        <span className="beta-hub-di-sq" />
+                        <span className="beta-hub-di-sq" />
+                    </div>
+                    <h1 className="beta-hub-title">di.i beta</h1>
+                    <p className="beta-hub-tagline">space · {spaceId}</p>
+                </header>
 
-            <section className="beta-hub-grid">
-                <div className="beta-card">
-                    <h2>Recent Projects</h2>
+                <div className="beta-hub-create-row">
+                    <input
+                        className="beta-hub-title-input"
+                        value={title}
+                        onChange={(event) => setTitle(event.target.value)}
+                        placeholder="project title"
+                        onKeyDown={(e) => e.key === 'Enter' && !isBusy && handleCreate()}
+                    />
+                    <button type="button" className="beta-hub-create-btn" onClick={handleCreate} disabled={isBusy}>
+                        new
+                    </button>
+                    <label className="beta-hub-import-btn">
+                        <input type="file" accept=".zip,.json,application/zip,application/json" onChange={handleImport} />
+                        import
+                    </label>
+                </div>
+
+                <div className="beta-hub-projects">
                     {projects.length ? (
                         <ul className="beta-project-list">
                             {projects.map((project) => (
@@ -171,53 +170,30 @@ export default function BetaHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
                                         className="danger"
                                         onClick={() => handleDeleteProject(project)}
                                     >
-                                        Delete
+                                        ×
                                     </button>
                                 </li>
                             ))}
                         </ul>
                     ) : (
-                        <p>{status}</p>
+                        <p className="beta-hub-empty">{status}</p>
                     )}
                 </div>
-                <div className="beta-card">
-                    <h2>Role In The Platform</h2>
-                    <ul className="beta-inline-list">
-                        <li>Beta lane for alternative and experimental project workflow</li>
-                        <li>Useful for testing ideas without replacing the main Studio surface</li>
-                        <li>Kept alongside Studio instead of replacing it</li>
-                    </ul>
-                </div>
-                <div className="beta-card">
-                    <h2>What V2 Reuses</h2>
-                    <ul className="beta-inline-list">
-                        <li>Server auth/edit lock and CORS hardening</li>
-                        <li>Asset upload and fetch transport</li>
-                        <li>Three/R3F graphics stack</li>
-                        <li>Socket presence + cursor transport</li>
-                    </ul>
-                </div>
-                <div className="beta-card">
-                    <h2>What V2 Replaces</h2>
-                    <ul className="beta-inline-list">
-                        <li>Legacy objects[] scene model</li>
-                        <li>Old panel shell split vs float duplication</li>
-                        <li>Main editor orchestration in App.jsx</li>
-                        <li>Legacy render composition</li>
-                    </ul>
-                </div>
-            </section>
 
-            {importWarnings.length ? (
-                <section className="beta-card beta-import-warnings">
-                    <h2>Import Warnings</h2>
-                    <ul className="beta-inline-list">
+                <footer className="beta-hub-footer">
+                    <button type="button" onClick={() => window.location.assign(buildStudioHubPath(spaceId))}>studio</button>
+                    <button type="button" onClick={() => window.location.assign(buildAppSpacePath(spaceId))}>public</button>
+                    <button type="button" onClick={() => window.location.assign(buildPreferencesPath(spaceId))}>admin</button>
+                </footer>
+
+                {importWarnings.length ? (
+                    <div className="beta-hub-warnings">
                         {importWarnings.map((warning) => (
-                            <li key={warning}>{warning}</li>
+                            <p key={warning}>{warning}</p>
                         ))}
-                    </ul>
-                </section>
-            ) : null}
+                    </div>
+                ) : null}
+            </div>
         </main>
     )
 }
