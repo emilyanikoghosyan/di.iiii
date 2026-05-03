@@ -25,12 +25,13 @@ Read this before starting work. Update it before stopping.
 ### Validation
 
 - `git diff --check` passed after whitespace cleanup.
-- Full validation should be rerun after this entry is committed:
-    - `npm run lint`
-    - `npm run test`
-    - `npm run build`
-    - `npm run test:server-contracts`
-    - `npm run docs:ai:check`
+- `npm run docs:ai:sync` passed — bridges already up to date.
+- `npm run docs:ai:check` passed.
+- `npm run lint` passed with existing warnings only.
+- `npm run test` passed: 66 files / 219 tests.
+- `npm run build` passed.
+- `npm run test:server-contracts` passed: 2 files / 16 tests.
+- Focused Beta checks passed: `npm run test -- BetaGraphSurface.test.jsx beta/utils/betaRouting.test.js`.
 
 ---
 
