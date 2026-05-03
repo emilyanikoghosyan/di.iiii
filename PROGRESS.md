@@ -35,6 +35,7 @@ Read this before starting work. Update it before stopping.
     - fast-forwarded local `main` and `staging` refs to their upstreams
     - closed PRs #9/#10 and deleted their `copilot/*` branches after confirmation to keep only needed branches
 - Stabilized the PreferencesPage runtime metadata test by waiting for async backend health metadata before asserting release fields.
+- Completed quick Beta editor win: `world.background` nodes now drive the Beta viewport background color, with legacy `worldState.backgroundColor` as fallback.
 
 ### Validation
 
@@ -44,7 +45,7 @@ Read this before starting work. Update it before stopping.
 - `npm run docs:ai:sync` passed — bridges already up to date.
 - `npm run docs:ai:check` passed.
 - `npm run lint` passed with 0 warnings.
-- `npm run test` passed: 66 files / 219 tests.
+- `npm run test` passed: 67 files / 221 tests.
 - `npm run build` passed.
 - `npm run test:server-contracts` passed: 2 files / 16 tests.
 - Focused Beta checks passed: `npm run test -- BetaGraphSurface.test.jsx beta/utils/betaRouting.test.js`.
@@ -209,7 +210,7 @@ Read this before starting work. Update it before stopping.
 ### Quick feature completions
 3. ~~**Delete key in world/view**~~ — done. World/View surfaces now listen for Delete/Backspace outside text inputs.
 4. **`geom.plane` texture** — add `textureUrl` port in `nodeRegistry.js`, read with `useTexture` in `BetaViewport.jsx:149`. ~30 lines.
-5. **`world.background` node drive** — check if `world.background` node exists in graph, use its color in `BetaViewport.jsx:216`. ~20 lines.
+5. ~~**`world.background` node drive**~~ — done. Beta viewport now reads the singleton graph node color before falling back to legacy `worldState.backgroundColor`.
 6. **Undo/redo in Beta** — push to `history[]` before each `applyLocalOps` call in `BetaEditor.jsx:280`, pop on `Ctrl+Z`. ~40 lines.
 
 ### File splits (reduce review friction)

@@ -13,6 +13,7 @@ import AudioObject from '../../objectComponents/AudioObject.jsx'
 import ModelObject from '../../objectComponents/ModelObject.jsx'
 import { getNodeType } from '../../project/nodeRegistry.js'
 import { detectEntityTypeForAsset } from '../../utils/mediaAssetTypes.js'
+import { getBetaWorldBackgroundColor } from '../utils/viewportWorldState.js'
 
 const isSpatialNode = (node) => getNodeType(node?.typeId)?.render === 'spatial-3d'
 
@@ -213,7 +214,7 @@ function SceneContent({
 
     return (
         <>
-            <color attach="background" args={[document.worldState?.backgroundColor || '#0a0e16']} />
+            <color attach="background" args={[getBetaWorldBackgroundColor(document)]} />
             <ambientLight
                 color={document.worldState?.ambientLight?.color || '#ffffff'}
                 intensity={document.worldState?.ambientLight?.intensity || 0.8}
