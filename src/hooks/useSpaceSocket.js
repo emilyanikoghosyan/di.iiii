@@ -97,7 +97,7 @@ const getSocketConfig = () => {
   const hasWindow = typeof window !== 'undefined'
   return getSocketConfigForRuntime({
     configuredBase: import.meta.env.VITE_API_BASE_URL || '',
-    token: import.meta.env.VITE_API_TOKEN || '',
+    token: '',
     isDev: Boolean(import.meta.env.DEV),
     locationOrigin: hasWindow ? window.location.origin : ''
   })
@@ -209,6 +209,7 @@ export function useSpaceSocket(spaceId, userId, userName) {
         try {
           listener(data)
         } catch (error) {
+            // ignore
         }
       })
     })
