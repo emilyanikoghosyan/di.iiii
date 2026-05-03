@@ -30,11 +30,16 @@ Read this before starting work. Update it before stopping.
     - GitHub Actions workflow for `staging` / manual SSH rsync deploys
     - deployment docs for required GitHub variables/secrets and host shape
     - live deploy docs now point to the future SSH staging path while keeping cPanel as current truth
+- Cleaned branch hygiene after the deploy workflow push:
+    - deleted stale remote `copilot/help-with-pull-request` branch with no open PR
+    - fast-forwarded local `main` and `staging` refs to their upstreams
+    - left open PR branches untouched pending an explicit close/delete decision
 
 ### Validation
 
 - `git diff --check` passed after whitespace cleanup.
 - SSH deploy workflow structural check passed.
+- Branch cleanup verification passed: remote branch count is now 7; worktree clean on `dev`.
 - `npm run docs:ai:sync` passed — bridges already up to date.
 - `npm run docs:ai:check` passed.
 - `npm run lint` passed with 0 warnings.
