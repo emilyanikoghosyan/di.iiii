@@ -690,6 +690,20 @@ export default function BetaEditor({
     const visibleSelection = Boolean(selectedNode || selectedEntity)
     const activeSurface = workspaceState.activeSurface || 'graph'
 
+    useEffect(() => {
+        if (!visibleSelection || activeSurface === 'graph') return undefined
+        const handler = (event) => {
+            if (event.key !== 'Delete' && event.key !== 'Backspace') return
+            const target = event.target
+            const tag = target?.tagName?.toLowerCase?.()
+            if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) return
+            event.preventDefault()
+            handleDeleteSelected()
+        }
+        window.addEventListener('keydown', handler)
+        return () => window.removeEventListener('keydown', handler)
+    }, [activeSurface, handleDeleteSelected, visibleSelection])
+
     const handleMoveWorldNode = (nodeId, nextPosition) => {
         applyLocalOps({
             type: 'updateNode',
