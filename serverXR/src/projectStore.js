@@ -1,6 +1,5 @@
 const path = require('node:path')
 const fsp = require('node:fs/promises')
-const crypto = require('node:crypto')
 const { ensureDir, readJson, writeJson } = require('./jsonStore')
 const { getDb } = require('./db')
 const { loadSharedModule } = require('./sharedRuntime')
@@ -252,14 +251,17 @@ const deleteProject = async (spacesDir, spaceId, projectId) => {
 
 const removeProjectIndexEntriesForSpace = async (spacesDir, spaceId) => {}
 
-const buildProjectAssetMeta = ({ assetId, file, source = 'server' }) => ({
-  id: assetId || crypto.randomUUID(),
+const buildProjectAssetMeta = ({ assetId, file, source = 'server' }) => {
+  if (!assetId) throw new Error('buildProjectAssetMeta: assetId is required (must be SHA-256 hex)')
+  return {
+  id: assetId,
   name: file?.originalname || file?.name || 'Untitled Asset',
   mimeType: file?.mimetype || file?.type || 'application/octet-stream',
   size: file?.size || 0,
   createdAt: Date.now(),
   source
-})
+  }
+}
 
 module.exports = {
   PROJECT_META_FILE,

@@ -1,4 +1,5 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
+import { Suspense, lazy } from 'react'
+import { BrowserRouter, useLocation } from 'react-router-dom'
 import { getBetaLocationState, isBetaLocation } from './beta/utils/betaRouting.js'
 import AuthGate from './components/AuthGate.jsx'
 import RouteSurfaceFallback from './components/RouteSurfaceFallback.jsx'
@@ -11,31 +12,12 @@ const BetaApp = lazy(() => import('./beta/BetaApp.jsx'))
 const StudioApp = lazy(() => import('./studio/StudioApp.jsx'))
 
 function AppRouter() {
-    const [locationState, setLocationState] = useState(() => ({
-        betaState: getBetaLocationState(),
-        studioState: getStudioLocationState(),
-        appState: getAppLocationState()
-    }))
+    const location = useLocation()
+    const betaState = getBetaLocationState(location)
+    const studioState = getStudioLocationState(location)
+    const appState = getAppLocationState(location)
 
-    useEffect(() => {
-        const handlePopState = () => {
-            setLocationState({
-                betaState: getBetaLocationState(),
-                studioState: getStudioLocationState(),
-                appState: getAppLocationState()
-            })
-        }
-        window.addEventListener('popstate', handlePopState)
-        return () => window.removeEventListener('popstate', handlePopState)
-    }, [])
-
-    const isStudio = useMemo(
-        () => isStudioLocation(locationState.studioState),
-        [locationState.studioState]
-    )
-    const isBeta = useMemo(() => isBetaLocation(locationState.betaState), [locationState.betaState])
-
-    if (isStudio) {
+    if (isStudioLocation(studioState)) {
         return (
             <Suspense
                 fallback={
@@ -45,12 +27,12 @@ function AppRouter() {
                     />
                 }
             >
-                <StudioApp initialRoute={locationState.studioState} />
+                <StudioApp initialRoute={studioState} />
             </Suspense>
         )
     }
 
-    if (isBeta) {
+    if (isBetaLocation(betaState)) {
         return (
             <Suspense
                 fallback={
@@ -60,12 +42,11 @@ function AppRouter() {
                     />
                 }
             >
-                <BetaApp initialRoute={locationState.betaState} />
+                <BetaApp initialRoute={betaState} />
             </Suspense>
         )
     }
 
-    const appState = locationState.appState
     const isRootLanding = !appState.spaceId && appState.page !== APP_PAGE_PREFERENCES
 
     if (isRootLanding) {
@@ -77,8 +58,10 @@ function AppRouter() {
 
 export default function RootApp() {
     return (
-        <AuthGate>
-            <AppRouter />
-        </AuthGate>
+        <BrowserRouter>
+            <AuthGate>
+                <AppRouter />
+            </AuthGate>
+        </BrowserRouter>
     )
 }

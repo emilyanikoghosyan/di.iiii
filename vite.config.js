@@ -114,6 +114,47 @@ export default {
         sourcemap: false,
         // 3D dependencies are large; raise warning threshold so CI stays clean.
         chunkSizeWarningLimit: 2000,
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    const normalizedId = id.split('\\').join('/')
+                    if (!normalizedId.includes('node_modules/')) return
+
+                    const parts = normalizedId.split('node_modules/')[1].split('/')
+                    const pkg = parts[0].startsWith('@') ? `${parts[0]}/${parts[1]}` : parts[0]
+
+                    // All three.js ecosystem packages in one chunk.
+                    // Must include ALL packages that import three (drei peer deps like
+                    // detect-gpu, maath, camera-controls, @monogrid/gainmap-js,
+                    // @react-spring/three) to avoid cross-chunk TDZ crashes
+                    // from circular initialization order.
+                    if (
+                        pkg === 'three'
+                        || pkg === 'three-mesh-bvh'
+                        || pkg === 'three-stdlib'
+                        || pkg.startsWith('@react-three/')
+                        || pkg.startsWith('@react-spring/')
+                        || pkg.startsWith('troika-')
+                        || pkg === 'meshoptimizer'
+                        || pkg === 'meshline'
+                        || pkg === 'r3f-perf'
+                        || pkg.startsWith('@pmndrs/')
+                        || pkg.startsWith('@iwer/')
+                        || pkg === 'iwer'
+                        || pkg === 'camera-controls'
+                        || pkg === 'detect-gpu'
+                        || pkg === 'maath'
+                        || pkg === '@monogrid/gainmap-js'
+                    ) return 'three-vendor'
+
+                    if (pkg === 'react' || pkg === 'react-dom') return 'react-vendor'
+
+                    if (pkg === 'jszip' || pkg === 'idb-keyval') return 'utils-vendor'
+
+                    return 'vendor'
+                }
+            }
+        }
     },
     test:
     {

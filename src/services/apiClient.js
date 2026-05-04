@@ -179,7 +179,8 @@ export async function apiFetch(path, {
     method = 'GET',
     headers,
     body,
-    json = true
+    json = true,
+    signal = undefined
 } = {}) {
     if (!hasServerApi) {
         throw new Error('API base URL is not configured')
@@ -191,7 +192,8 @@ export async function apiFetch(path, {
     const init = {
         method,
         credentials: 'include',
-        headers: headers || {}
+        headers: headers || {},
+        ...(signal !== undefined ? { signal } : {})
     }
     if (body instanceof FormData) {
         init.body = body
@@ -219,7 +221,7 @@ export async function apiFetch(path, {
     return response.json()
 }
 
-export const getApiSession = async () => apiFetch('/api/auth/session')
+export const getApiSession = async (opts = {}) => apiFetch('/api/auth/session', opts)
 
 export const loginApiSession = async (token) => apiFetch('/api/auth/session', {
     method: 'POST',

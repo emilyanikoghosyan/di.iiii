@@ -22,13 +22,16 @@ export default function useAuthSession() {
             setLoading(false)
             return
         }
+        const controller = new AbortController()
+        const tid = setTimeout(() => controller.abort(), 8000)
         try {
-            const data = await getApiSession()
+            const data = await getApiSession({ signal: controller.signal })
             setState({ ...DEFAULT_STATE, ...data })
             setError(null)
         } catch (err) {
             setError(err?.message || 'Failed to reach server')
         } finally {
+            clearTimeout(tid)
             setLoading(false)
         }
     }, [])

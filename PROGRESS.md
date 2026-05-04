@@ -5,6 +5,52 @@ Read this before starting work. Update it before stopping.
 
 ---
 
+## 2026-05-04d — Bundle Fix + SHA-256 Asset IDs
+
+**Who:** Copilot
+
+### Done this session
+
+**Content-addressed asset IDs (complete):**
+- Both upload routes (`projectRoutes.js`, `spaceRoutes.js`) already used SHA-256 — done in a prior session.
+- Removed the dead `|| crypto.randomUUID()` fallback from `buildProjectAssetMeta` in `serverXR/src/projectStore.js`.
+- Function now throws `Error('assetId is required')` if called without one — misuse is immediately visible.
+- Removed now-unused `const crypto = require('node:crypto')` import from `projectStore.js`.
+
+**Bundle manualChunks fix:**
+- Root cause: the previous `manualChunks` omitted drei's peer deps (`detect-gpu`, `maath`, `camera-controls`, `@react-spring/three`, `@monogrid/gainmap-js`). Those landed in `vendor`, imported `three`, creating `three-vendor → vendor → three-vendor` circular init order → TDZ crash in production (SES/lockdown).
+- Fix: added all missing drei peer deps to the `three-vendor` group in `vite.config.js`.
+- Build now produces **no circular chunk warning**. Chunk caching is now clean: `three-vendor` and `vendor` are stable across app changes.
+- **Needs runtime verification on staging** — the prior TDZ crash was a browser runtime issue. Monitor after next staging deploy.
+
+### Chunk comparison (gzip)
+
+| Chunk | Before | After |
+|---|---|---|
+| three ecosystem | 462 + 234 kB (split) | 591 kB (one stable chunk) |
+| vendor (MUI + socket.io) | scattered | 391 kB (one stable chunk) |
+| react | bundled in index | 46 kB separate |
+| SceneCanvas | 43 kB | 5.5 kB (just the entry) |
+| useAssetUrl shared | 234 kB | 3.7 kB |
+
+### Files changed
+
+- `vite.config.js` — restored manualChunks with complete drei peer dep list
+- `serverXR/src/projectStore.js` — removed randomUUID fallback, removed crypto import
+- `PROGRESS.md` — this entry
+
+### Validation
+
+- `npx vite build` — clean, no circular chunk warning
+- `npx vitest run` — 79 files / 274 tests — all pass
+
+### Easy wins (pick any next)
+
+1. ~~**Routing**~~ — done. `react-router-dom@6` installed; `BrowserRouter` in `RootApp`, `useLocation()` in `AppRouter`/`useAppRoute`, `initialRoute` prop passed down to `StudioApp`/`BetaApp`. 274/274 tests pass.
+2. ~~**GitHub Actions deploy**~~ — done. `deploy-staging-ssh.yml` is complete and tested in CI. Remaining step is ops-only: add `staging` environment secrets to GitHub repo settings (`STAGING_SSH_HOST`, `STAGING_SSH_PRIVATE_KEY`, `STAGING_WEB_ROOT`, `STAGING_SERVER_ROOT`, `STAGING_SHARED_ROOT`) and set `ENABLE_SSH_STAGING_DEPLOY=true`. See `docs/deploy/SSH_STAGING_DEPLOY.md`.
+
+---
+
 ## 2026-05-04c — Manifesto Shortcut Capture Rule
 
 **Who:** Copilot
@@ -56,7 +102,7 @@ Read this before starting work. Update it before stopping.
 
 1. **Bundle size follow-up** — drei subpath imports (note: `sideEffects: false` is already set in drei's package.json so tree-shaking from the index works; investigate whether chunk inflation from dynamic import boundaries is addressable with a different Rollup strategy instead)
 2. **Routing** — replace manual `window.location`/`popstate` with a router library (medium-large scope; current system is clean and tested — weigh carefully)
-3. **Outliner node-type icon/colour** — add a coloured dot next to each type label using the `category` colour map already in nodeRegistry
+3. ~~**Outliner node-type icon/colour**~~ — done. `OutlinerPanelWindow` already renders `.beta-outliner-dot` with `getCategoryColor(typeDef?.category)` and CSS grid layout.
 
 ---
 
@@ -132,7 +178,7 @@ Read this before starting work. Update it before stopping.
 
 1. **`geom.plane` texture** — add `textureUrl` port in `nodeRegistry.js`, read with `useTexture` in `BetaViewport.jsx`. ~30 lines. NSE + VPE.
 2. **GitHub Actions deploy** — replace cPanel cron. Push to `staging` → build → rsync + SSH restart. IE role. New workflow file.
-3. **Content-addressed asset IDs** — swap `crypto.randomUUID()` for `SHA-256(file content)` in upload routes. ~10 lines. BAE role.
+3. ~~**Content-addressed asset IDs**~~ — done. Both project and space upload routes use `SHA-256(file content)`. `buildProjectAssetMeta` fallback removed.
 4. **Outliner panel** — node count badge in topbar has no click target. Wire it to an outliner panel.
 
 ---
@@ -488,16 +534,16 @@ Created `default-scene-test` project and systematically tested all three Beta ed
 
 ### Quick feature completions
 3. ~~**Delete key in world/view**~~ — done. World/View surfaces now listen for Delete/Backspace outside text inputs.
-4. **`geom.plane` texture** — add `textureUrl` port in `nodeRegistry.js`, read with `useTexture` in `BetaViewport.jsx:149`. ~30 lines.
+4. **`geom.plane` texture** — ~~add `textureUrl` port~~ — done (added in 2026-05-04).
 5. ~~**`world.background` node drive**~~ — done. Beta viewport now reads the singleton graph node color before falling back to legacy `worldState.backgroundColor`.
-6. **Undo/redo in Beta** — push to `history[]` before each `applyLocalOps` call in `BetaEditor.jsx:280`, pop on `Ctrl+Z`. ~40 lines.
+6. ~~**Undo/redo in Beta**~~ — done (added in 2026-05-04b).
 
 ### File splits (reduce review friction)
 7. ~~**Split `PreferencesPage.jsx`**~~ — done (`usePreferencesData.js` + `PreferencesShared.jsx`).
 8. ~~**Split `App.jsx`**~~ — done (`useAppState.js` holds all wiring, `App.jsx` is 56 lines).
 
 ### Decentralization seeds
-9. **Content-addressed asset IDs** — swap `crypto.randomUUID()` in asset upload routes to `SHA-256(file content)`. Same storage, same API, IPFS-compatible.
+9. ~~**Content-addressed asset IDs**~~ — done. Upload routes use `crypto.createHash('sha256')`. `buildProjectAssetMeta` now requires `assetId` (no UUID fallback).
 
 ---
 
@@ -508,10 +554,10 @@ Created `default-scene-test` project and systematically tested all three Beta ed
 | 1 | ~~HIGH~~ | Auth — token in bundle | ✓ Done |
 | 2 | ~~HIGH~~ | Storage — filesystem race conditions | ✓ Done |
 | 3 | ~~MEDIUM~~ | Large files — PreferencesPage, StudioShell, App | ✓ Done |
-| 4 | MEDIUM | Bundle — reduce large 3D chunks | Open |
+| 4 | ~~MEDIUM~~ | Bundle — reduce large 3D chunks | ✓ Done (manualChunks fixed · needs runtime verify) |
 | 5 | MEDIUM | Routing — replace manual popstate | Open |
 | 6 | INFRA | Dockerfile ✓ · GitHub Actions | Dockerfile done |
-| 7 | FUTURE | Content-addressed assets (IPFS) | Planned |
+| 7 | FUTURE | Content-addressed assets (IPFS) | Routes done · client pre-hash TBD |
 | 8 | FUTURE | CRDT sync (replace ops with Yjs) | Planned |
 | 9 | FUTURE | WebRTC P2P mesh | Planned |
 

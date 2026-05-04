@@ -4,7 +4,7 @@ import useAuthSession from '../hooks/useAuthSession.js'
 import { hasServerApi } from '../services/apiClient.js'
 
 export default function AuthGate({ children }) {
-    const { requireAuth, authenticated, loading, login } = useAuthSession()
+    const { requireAuth, authenticated, loading, error, refresh, login } = useAuthSession()
     const [token, setToken] = useState('')
     const [submitting, setSubmitting] = useState(false)
     const [loginError, setLoginError] = useState(null)
@@ -19,6 +19,29 @@ export default function AuthGate({ children }) {
 
     if (!hasServerApi || !requireAuth || authenticated) {
         return children
+    }
+
+    if (error) {
+        return (
+            <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--ui-bg)' }}>
+                <Stack spacing={2} sx={{ width: '100%', maxWidth: 360, px: 3, py: 4, border: '1px solid var(--ui-border)', borderRadius: 2, background: 'var(--ui-surface)', alignItems: 'flex-start' }}>
+                    <Typography variant="h6" sx={{ color: 'var(--ui-text-primary)', fontWeight: 700, letterSpacing: '-0.02em' }}>
+                        di<span style={{ color: 'var(--ui-accent)' }}>.</span>iiii
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'var(--ui-text-muted)' }}>
+                        Backend unavailable — {error}
+                    </Typography>
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={refresh}
+                        sx={{ textTransform: 'none', borderColor: 'var(--ui-border)', color: 'var(--ui-text-primary)' }}
+                    >
+                        Retry
+                    </Button>
+                </Stack>
+            </Box>
+        )
     }
 
     const handleSubmit = async (e) => {
