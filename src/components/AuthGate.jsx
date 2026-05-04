@@ -17,11 +17,10 @@ export default function AuthGate({ children }) {
         )
     }
 
-    if (!hasServerApi || !requireAuth || authenticated) {
-        return children
-    }
-
-    if (error) {
+    // Error screen must come before the requireAuth check: when the backend is
+    // unreachable, requireAuth stays false (default) and would otherwise let the
+    // app render while every API call fails, producing a cascade of 100+ errors.
+    if (error && hasServerApi) {
         return (
             <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--ui-bg)' }}>
                 <Stack spacing={2} sx={{ width: '100%', maxWidth: 360, px: 3, py: 4, border: '1px solid var(--ui-border)', borderRadius: 2, background: 'var(--ui-surface)', alignItems: 'flex-start' }}>
@@ -42,6 +41,10 @@ export default function AuthGate({ children }) {
                 </Stack>
             </Box>
         )
+    }
+
+    if (!hasServerApi || !requireAuth || authenticated) {
+        return children
     }
 
     const handleSubmit = async (e) => {

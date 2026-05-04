@@ -26,9 +26,10 @@ Branch: `dev` = `staging` (both at `78ebe44`)
 ## Known fixes — check here before investigating any error
 
 | Symptom | Root cause | Fix | File |
-|---------|-----------|-----|------|
+| ------- | --------- | --- | ---- |
 | `Cannot access 'X' before initialization` / white screen in prod | `manualChunks` missing drei peer deps → circular chunk init order (TDZ) | All drei peer deps **must** be in `three-vendor` group: `detect-gpu`, `maath`, `camera-controls`, `@monogrid/gainmap-js`, `@react-spring/three`. Build must show **no circular chunk warning**. | `vite.config.js` |
 | Infinite loading spinner / auth never resolves | No timeout on session fetch — hangs if backend is slow/down | `AbortController` with 8 000 ms timeout in `useAuthSession.js` | `src/hooks/useAuthSession.js` |
+| 100+ cascade console errors when backend is 503 | `requireAuth` stays `false` (default) when fetch fails → `AuthGate` skips error screen and renders the app → every API call fails | Error check was moved **before** `!requireAuth` check in `AuthGate` — now shows "Backend unavailable" + Retry when backend is down | `src/components/AuthGate.jsx` |
 | Page does not change after clicking a link / navigation broken | Wrong assumption: `navigateToBetaPath` / `navigateToStudioPath` use raw `pushState` + synthetic `popstate` — react-router **does** pick this up correctly | Do not replace these helpers. `BrowserRouter` listens to `popstate` and reads `window.location`. | `src/beta/utils/betaRouting.js` `src/studio/utils/studioRouting.js` |
 | Staging still serves old build after push | GitHub Actions `publish-cpanel-prebuilt-v2` hasn't finished yet, or cPanel cron hasn't pulled | Wait 2–3 min, then: `gh run list --workflow publish-cpanel-prebuilt-v2.yml` to verify | `.github/workflows/publish-cpanel-prebuilt-v2.yml` |
 | `assetId is required` server error on upload | Old code had `\|\| crypto.randomUUID()` fallback — removed intentionally | Upload routes must compute SHA-256 **before** calling `buildProjectAssetMeta` | `serverXR/src/projectStore.js` |
