@@ -127,7 +127,14 @@ export default {
                     const parts = normalizedId.split('node_modules/')[1].split('/')
                     const pkg = parts[0].startsWith('@') ? `${parts[0]}/${parts[1]}` : parts[0]
 
-                    if (pkg === 'three')
+                    if (
+                        pkg === 'three'
+                        || pkg === '@react-three/fiber'
+                        || pkg.startsWith('three-')
+                        || pkg.startsWith('troika-')
+                        || pkg === 'meshoptimizer'
+                        || pkg === 'meshline'
+                    )
                         return 'three-core'
 
                     if (
@@ -140,10 +147,6 @@ export default {
 
                     if (
                         pkg.startsWith('@react-three')
-                        || pkg.startsWith('three-')
-                        || pkg.startsWith('troika-')
-                        || pkg === 'meshoptimizer'
-                        || pkg === 'meshline'
                         || pkg === 'r3f-perf'
                     )
                         return 'react-three'
