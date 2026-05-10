@@ -1,54 +1,53 @@
 # Current State
 
-**Every AI reads this before anything else. It is ≤50 lines. Read it in full.**
+**Every AI reads this before anything else. ≤50 lines. Read in full.**
 Updated at the end of every session. Replace content — do not append.
 
 ---
 
 ## Last commit
 
-`78ebe44` — feat: react-router-dom routing, bundle TDZ fix, auth timeout  
-Branch: `dev` = `staging` (both at `78ebe44`)
+`3e8824a` — feat(beta): graph-first workspace, world node, and palette improvements
+Branch: `dev` = `staging` = `cpanel-staging` — staging.di-studio.xyz is live.
 
 ## What works
 
+- Beta editor: graph-first layout, node palette (all nodes, scrollable), undo/redo, outliner
+- Beta topbar: hidden until Node 0 is placed (Node 0 is the seed that awakens the UI)
+- World node (`universe.world`): panel window with embedded 3D scene, fullscreen mode, overlay mode (3D behind graph)
 - Studio editor: project hub, 3D scene, inspector, assets, spaces
-- Beta editor: node graph, wiring, World/Graph/View surfaces, outliner, undo/redo
-- Auth: session-cookie login (`AuthGate`), role-based access, 8 s timeout on session fetch
-- Storage: SQLite for all metadata, filesystem for binary assets
-- Deploy: `npm run deploy:staging` → pushes to `origin/staging` → GitHub Actions builds `cpanel-staging` → cPanel serves it
+- Auth: session-cookie login, role-based access, 8 s timeout
+- Deploy: push to `staging` → GitHub Actions `publish-cpanel-prebuilt-v2.yml` → builds → pushes `cpanel-staging` → cPanel auto-deploys
 
 ## What is broken / open
 
+- `deploy-staging-ssh.yml` always fails (SSH secrets not in GitHub) — ignore it, cPanel pipeline is the real path
 - Browser back/forward can be inconsistent (mixed history: react-router `navigate` + raw `pushState`)
 - No undo/redo in Studio editor (Beta has it)
 
-## Known fixes — check here before investigating any error
+## Known fixes — check here before investigating
 
 | Symptom | Root cause | Fix | File |
-| ------- | --------- | --- | ---- |
-| `Cannot access 'X' before initialization` / white screen in prod | `manualChunks` missing drei peer deps → circular chunk init order (TDZ) | All drei peer deps **must** be in `three-vendor` group: `detect-gpu`, `maath`, `camera-controls`, `@monogrid/gainmap-js`, `@react-spring/three`. Build must show **no circular chunk warning**. | `vite.config.js` |
-| Infinite loading spinner / auth never resolves | No timeout on session fetch — hangs if backend is slow/down | `AbortController` with 8 000 ms timeout in `useAuthSession.js` | `src/hooks/useAuthSession.js` |
-| 100+ cascade console errors when backend is 503 | `requireAuth` stays `false` (default) when fetch fails → `AuthGate` skips error screen and renders the app → every API call fails | Error check was moved **before** `!requireAuth` check in `AuthGate` — now shows "Backend unavailable" + Retry when backend is down | `src/components/AuthGate.jsx` |
-| Page does not change after clicking a link / navigation broken | Wrong assumption: `navigateToBetaPath` / `navigateToStudioPath` use raw `pushState` + synthetic `popstate` — react-router **does** pick this up correctly | Do not replace these helpers. `BrowserRouter` listens to `popstate` and reads `window.location`. | `src/beta/utils/betaRouting.js` `src/studio/utils/studioRouting.js` |
-| Beta graph/view nodes stop at the left edge while dragging | Drag math clamped graph `x` to `>= 0` and DesktopWindow clamped view window `x` to the viewport padding | Remove the graph drag clamp and allow view windows to overflow left while still clamping top and right edges | `src/beta/components/BetaGraphSurface.jsx` `src/beta/components/DesktopWindow.jsx` `src/beta/utils/windowLayout.js` |
-| Staging still serves old build after push | GitHub Actions `publish-cpanel-prebuilt-v2` hasn't finished yet, or cPanel cron hasn't pulled | Wait 2–3 min, then: `gh run list --workflow publish-cpanel-prebuilt-v2.yml` to verify | `.github/workflows/publish-cpanel-prebuilt-v2.yml` |
-| `assetId is required` server error on upload | Old code had `\|\| crypto.randomUUID()` fallback — removed intentionally | Upload routes must compute SHA-256 **before** calling `buildProjectAssetMeta` | `serverXR/src/projectStore.js` |
+|---------|-----------|-----|------|
+| White screen / TDZ crash in prod | `manualChunks` missing drei peer deps → circular chunk init order | All drei peer deps in `three-vendor`: `detect-gpu`, `maath`, `camera-controls`, `@monogrid/gainmap-js`, `@react-spring/three` | `vite.config.js` |
+| Infinite loading / auth never resolves | No timeout on session fetch | `AbortController` 8 000 ms timeout | `src/hooks/useAuthSession.js` |
+| 100+ cascade errors when backend is 503 | `requireAuth` stays false → `AuthGate` skips error screen | Error check moved before `!requireAuth` | `src/components/AuthGate.jsx` |
+| Page does not change after clicking a link | `navigateToBetaPath` uses raw `pushState` + synthetic `popstate` — this is correct | Do not replace these helpers | `src/beta/utils/betaRouting.js` |
+| Graph nodes stop at left edge while dragging | Drag clamped `x >= 0` | Allow overflow left, clamp top/right only | `BetaGraphSurface.jsx` `DesktopWindow.jsx` `windowLayout.js` |
+| Staging serves old build after push | Actions workflow still running | Wait 2–3 min: `gh run list --workflow publish-cpanel-prebuilt-v2.yml` | `.github/workflows/` |
+| `assetId is required` on upload | Dead `|| crypto.randomUUID()` fallback removed | SHA-256 must be computed before calling `buildProjectAssetMeta` | `serverXR/src/projectStore.js` |
 
-## Deploy commands
+## Deploy
 
 ```bash
-npm run deploy:staging      # dev → origin/dev + origin/staging (triggers GitHub Actions)
-npm run deploy:production   # staging → origin/main
-gh run list --workflow publish-cpanel-prebuilt-v2.yml   # check build status
+git checkout staging && git merge dev --no-edit && git push origin staging && git checkout dev
+gh run list --workflow publish-cpanel-prebuilt-v2.yml
 ```
 
-## Validation (run before every commit)
+## Validation
 
 ```bash
 npm run lint && npm run build && npm run test -- --run && npm run test:server-contracts
 ```
 
----
-
-**Rule for all sessions:** When you solve something that took more than 5 minutes to find, add a row to the Known fixes table above and update the "Last commit" line.
+**Rule:** When you solve something that took >5 min to find, add a row to Known fixes and update Last commit.

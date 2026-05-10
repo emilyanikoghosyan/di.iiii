@@ -5,6 +5,29 @@ Read this before starting work. Update it before stopping.
 
 ---
 
+## 2026-05-10 — Beta graph-first workspace + world node
+
+**Who:** Gevorg + Claude
+
+### Done
+
+- **Graph as primary surface** — `BetaViewSurface` removed; `BetaGraphSurface` is the permanent canvas
+- **Topbar seeding** — topbar is hidden until `universe.node0` is placed; fades in on Node 0 creation
+- **`universe.world` node** — singleton panel-2d node replacing the ad-hoc system viewport window
+  - Panel mode: resizable `DesktopWindow` with `BetaViewport` inside
+  - Overlay mode (◫): 3D world renders as transparent background behind graph
+  - Fullscreen mode (⤢): world takes over screen; topbar "← World" exits
+- **NodePalette**: removed `slice(0, 8)` cap; all matching nodes visible with arrow-key scroll tracking
+- **`Node0PanelWindow`** and **`WorldPanelWindow`** added as dedicated panel components
+- `universe.world` added to `SINGLETON_TYPE_IDS` in `projectSchema.js`
+- Committed `3e8824a` to `dev` + `staging`; cPanel deploy confirmed live on `staging.di-studio.xyz`
+
+### Validation
+
+- `npm run test` — 81 files / 284 tests — all pass
+
+---
+
 ## 2026-05-04d — Bundle Fix + SHA-256 Asset IDs
 
 **Who:** Copilot
