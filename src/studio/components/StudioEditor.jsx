@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMediaQuery, useTheme } from '@mui/material'
 import { createEntityOfType, getInspectorSections } from '../../project/entityRegistry.js'
 import { useProjectDocumentSync } from '../../project/hooks/useProjectDocumentSync.js'
@@ -60,12 +60,21 @@ export default function StudioEditor({ projectId, spaceId = DEFAULT_PROJECT_SPAC
     })
     const store = useProjectStore()
     const { state, dispatch } = store
-    const { applyLocalOps, replaceDocument } = useProjectDocumentSync({
+    const { applyLocalOps: _applyLocalOps, replaceDocument } = useProjectDocumentSync({
         projectId,
         store,
         clientIdPrefix: 'studio-client',
         opIdPrefix: 'studio-op'
     })
+    const historyRef = useRef([])
+    const redoRef = useRef([])
+    const documentRef = useRef(state.document)
+    useEffect(() => { documentRef.current = state.document }, [state.document])
+    const applyLocalOps = useCallback((ops, options) => {
+        historyRef.current = [...historyRef.current.slice(-49), documentRef.current]
+        redoRef.current = []
+        return _applyLocalOps(ops, options)
+    }, [_applyLocalOps])
     const presence = useProjectPresence({
         projectId,
         displayName,
@@ -112,6 +121,30 @@ export default function StudioEditor({ projectId, spaceId = DEFAULT_PROJECT_SPAC
             // ignore local storage errors
         }
     }, [displayName])
+
+    useEffect(() => {
+        const handler = (event) => {
+            const tag = event.target?.tagName?.toLowerCase?.()
+            if (tag === 'input' || tag === 'textarea' || event.target?.isContentEditable) return
+            const isUndo = (event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey
+            const isRedo = (event.ctrlKey || event.metaKey) && (event.key === 'y' || (event.key === 'z' && event.shiftKey))
+            if (!isUndo && !isRedo) return
+            event.preventDefault()
+            if (isUndo && historyRef.current.length > 0) {
+                redoRef.current = [...redoRef.current.slice(-49), documentRef.current]
+                const prev = historyRef.current.at(-1)
+                historyRef.current = historyRef.current.slice(0, -1)
+                dispatch({ type: 'replace-document', document: prev, version: state.version })
+            } else if (isRedo && redoRef.current.length > 0) {
+                historyRef.current = [...historyRef.current.slice(-49), documentRef.current]
+                const next = redoRef.current.at(-1)
+                redoRef.current = redoRef.current.slice(0, -1)
+                dispatch({ type: 'replace-document', document: next, version: state.version })
+            }
+        }
+        window.addEventListener('keydown', handler)
+        return () => window.removeEventListener('keydown', handler)
+    }, [dispatch, state.version])
 
     useEffect(() => {
         let cancelled = false

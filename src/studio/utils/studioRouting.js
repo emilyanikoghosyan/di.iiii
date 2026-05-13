@@ -87,9 +87,4 @@ export const getStudioLocationState = (
 
 export const isStudioLocation = (locationState = null) => Boolean(locationState?.isStudio)
 
-export const navigateToStudioPath = (path, { replace = false } = {}) => {
-    if (typeof window === 'undefined') return
-    const method = replace ? 'replaceState' : 'pushState'
-    window.history[method]({}, '', path)
-    window.dispatchEvent(new PopStateEvent('popstate'))
-}
+export { appNavigate as navigateToStudioPath } from '../../utils/appNavigate.js'

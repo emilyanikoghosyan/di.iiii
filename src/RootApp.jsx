@@ -1,5 +1,6 @@
-import { Suspense, lazy } from 'react'
-import { BrowserRouter, useLocation } from 'react-router-dom'
+import { Suspense, lazy, useEffect } from 'react'
+import { BrowserRouter, useLocation, useNavigate } from 'react-router-dom'
+import { setAppNavigate } from './utils/appNavigate.js'
 import { getBetaLocationState, isBetaLocation } from './beta/utils/betaRouting.js'
 import AuthGate from './components/AuthGate.jsx'
 import RouteSurfaceFallback from './components/RouteSurfaceFallback.jsx'
@@ -12,6 +13,8 @@ const BlankNodeWorkspaceApp = lazy(() => import('./beta/BlankNodeWorkspaceApp.js
 const StudioApp = lazy(() => import('./studio/StudioApp.jsx'))
 
 function AppRouter() {
+    const rrNavigate = useNavigate()
+    useEffect(() => { setAppNavigate(rrNavigate) }, [rrNavigate])
     const location = useLocation()
     const betaState = getBetaLocationState(location)
     const studioState = getStudioLocationState(location)

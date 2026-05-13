@@ -6,7 +6,6 @@ import BetaGraphSurface from './BetaGraphSurface.jsx'
 import NodePalette from './NodePalette.jsx'
 import TextPanelWindow from './TextPanelWindow.jsx'
 import ImagePanelWindow from './ImagePanelWindow.jsx'
-import Node0PanelWindow from './Node0PanelWindow.jsx'
 import WorldPanelWindow from './WorldPanelWindow.jsx'
 import OutlinerPanelWindow from './OutlinerPanelWindow.jsx'
 import BetaHelpDialog from './BetaHelpDialog.jsx'
@@ -258,6 +257,17 @@ export default function BetaEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hasNodeZero])
 
+    // Truncate navStack when a scoped node is deleted — prevents ghost scope
+    useEffect(() => {
+        const nodeIds = new Set(authoredNodes.map((n) => n.id))
+        setNavStack((prev) => {
+            const cutAt = prev.findIndex((id) => id !== null && !nodeIds.has(id))
+            if (cutAt === -1) return prev
+            const next = prev.slice(0, cutAt)
+            return next.length > 0 ? next : [null]
+        })
+    }, [authoredNodes])
+
     useEffect(() => {
         if (!isLocalWorkspace || !localStorageKey) return
         writeLocalWorkspaceDocument(localStorageKey, document)
@@ -370,13 +380,11 @@ export default function BetaEditor({
 
     const handleInspectorChange = (component, nextComponentValue) => {
         if (surfaceSelectedNode) {
-            const patch = { [component]: nextComponentValue }
-            if (component === 'values') patch.params = nextComponentValue
             applyLocalOps({
                 type: 'updateNode',
                 payload: {
                     nodeId: surfaceSelectedNode.id,
-                    patch
+                    patch: { [component]: nextComponentValue }
                 }
             })
             return
@@ -716,9 +724,6 @@ export default function BetaEditor({
 
     const renderViewNodeContent = (node) => {
         const resolvedValues = evaluateNodeInputs(node, graphContext)
-        if (node.typeId === 'universe.node0') {
-            return <Node0PanelWindow node={{ ...node, values: resolvedValues }} />
-        }
         if (node.typeId === 'universe.world') {
             return (
                 <WorldPanelWindow

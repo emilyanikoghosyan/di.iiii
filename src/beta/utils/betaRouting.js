@@ -114,9 +114,4 @@ export const getBetaLocationState = (
 
 export const isBetaLocation = (locationState = null) => Boolean(locationState?.isBeta)
 
-export const navigateToBetaPath = (path, { replace = false } = {}) => {
-    if (typeof window === 'undefined') return
-    const method = replace ? 'replaceState' : 'pushState'
-    window.history[method]({}, '', path)
-    window.dispatchEvent(new PopStateEvent('popstate'))
-}
+export { appNavigate as navigateToBetaPath } from '../../utils/appNavigate.js'

@@ -123,7 +123,7 @@ export default function BetaGraphSurface({
         applyViewport(px, py, viewportRef.current.zoom)
         hasFitRef.current = true
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [nodes.length > 0])
+    }, [nodes.length])
 
     // Non-passive wheel listener — cursor-anchored zoom, no scroll
     useEffect(() => {
