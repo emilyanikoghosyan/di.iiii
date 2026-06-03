@@ -7,7 +7,7 @@ Updated at the end of every session. Replace content — do not append.
 
 ## Last commit
 
-`deb5e38` — docs: align repo visibility and mirror status
+`d7a84c1` — fix: harden routing and auth contracts
 Branch focus: active development on `dev`; promote through `staging` for live verification.
 
 ## What works
