@@ -12,6 +12,7 @@ import {
     uploadProjectAsset
 } from '../../project/services/projectsApi.js'
 import { getServerSpace, updateServerSpace } from '../../services/serverSpaces.js'
+import { appNavigate } from '../../utils/appNavigate.js'
 import { buildStudioHubPath } from '../../studio/utils/studioRouting.js'
 import { buildBetaProjectPath, navigateToBetaPath } from '../utils/betaRouting.js'
 import { GUIDE_AUDIENCES } from '../utils/betaGuide.js'
@@ -135,7 +136,7 @@ export default function BetaHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
 
     const handleAudienceAction = (audienceId) => {
         if (audienceId === 'visitor') {
-            window.location.assign(buildAppSpacePath(spaceId))
+            appNavigate(buildAppSpacePath(spaceId))
             return
         }
         focusCreateInput()
@@ -229,9 +230,9 @@ export default function BetaHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
                 </div>
 
                 <footer className="beta-hub-footer">
-                    <button type="button" onClick={() => window.location.assign(buildStudioHubPath(spaceId))}>studio</button>
-                    <button type="button" onClick={() => window.location.assign(buildAppSpacePath(spaceId))}>public</button>
-                    <button type="button" onClick={() => window.location.assign(buildPreferencesPath(spaceId))}>admin</button>
+                    <button type="button" onClick={() => appNavigate(buildStudioHubPath(spaceId))}>studio</button>
+                    <button type="button" onClick={() => appNavigate(buildAppSpacePath(spaceId))}>public</button>
+                    <button type="button" onClick={() => appNavigate(buildPreferencesPath(spaceId))}>admin</button>
                 </footer>
 
                 {importWarnings.length ? (
