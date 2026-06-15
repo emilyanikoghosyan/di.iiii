@@ -1,0 +1,42 @@
+import { usePanelDrag } from '../../hooks/usePanelDrag.js'
+import { usePanelResize } from '../../hooks/usePanelResize.js'
+
+export default function StudioFloatingPanel({
+    title,
+    onClose,
+    initialPosition = { x: 16, y: 16 },
+    initialWidth = 280,
+    minWidth = 180,
+    maxWidth = 640,
+    minHeight = 80,
+    maxHeight = 900,
+    children
+}) {
+    const { panelRef, dragProps, dragStyle, panelPointerProps } = usePanelDrag(initialPosition)
+    const { width, height, resizerProps } = usePanelResize(initialWidth, {
+        min: minWidth,
+        max: maxWidth,
+        minHeight,
+        maxHeight
+    })
+
+    return (
+        <div
+            ref={panelRef}
+            style={{ ...dragStyle, width }}
+            className="sfp-shell"
+            {...panelPointerProps}
+        >
+            <div className="sfp-header" {...dragProps}>
+                <span className="sfp-title">{title}</span>
+                {onClose && (
+                    <button className="sfp-close" onClick={onClose} title="Close">×</button>
+                )}
+            </div>
+            <div className="sfp-content" style={height ? { height } : undefined}>
+                {children}
+            </div>
+            <div className="sfp-resizer" {...resizerProps} />
+        </div>
+    )
+}
