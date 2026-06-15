@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { cloneValue } from '../../shared/projectSchema.js'
 
 const setNestedValue = (value, path, nextValue) => {
@@ -15,6 +15,63 @@ const setNestedValue = (value, path, nextValue) => {
 
 const readNestedValue = (value, path = []) =>
     path.reduce((cur, key) => cur?.[key], value)
+
+function InspNumber({ field, value, onChange }) {
+    const step = field.step ?? 0.1
+    const min = field.min ?? -Infinity
+    const max = field.max ?? Infinity
+    const num = Number.isFinite(Number(value)) ? Number(value) : 0
+    const intervalRef = useRef(null)
+
+    const clamp = (v) => Math.min(max, Math.max(min, v))
+
+    const increment = useCallback((dir) => {
+        onChange(clamp(parseFloat((num + dir * step).toFixed(10))))
+    }, [num, step, min, max, onChange])
+
+    const startRepeat = (dir) => {
+        increment(dir)
+        intervalRef.current = setInterval(() => increment(dir), 80)
+    }
+
+    const stopRepeat = () => {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+    }
+
+    return (
+        <div className="insp-field">
+            <label className="insp-label">{field.label}</label>
+            <div className="insp-num-wrap">
+                <input
+                    type="number"
+                    className="insp-input insp-num-input"
+                    value={num}
+                    min={field.min}
+                    max={field.max}
+                    step={step}
+                    onChange={(e) => onChange(clamp(Number(e.target.value)))}
+                />
+                <div className="insp-num-arrows">
+                    <button
+                        className="insp-num-btn"
+                        onPointerDown={() => startRepeat(1)}
+                        onPointerUp={stopRepeat}
+                        onPointerLeave={stopRepeat}
+                        tabIndex={-1}
+                    >▲</button>
+                    <button
+                        className="insp-num-btn"
+                        onPointerDown={() => startRepeat(-1)}
+                        onPointerUp={stopRepeat}
+                        onPointerLeave={stopRepeat}
+                        tabIndex={-1}
+                    >▼</button>
+                </div>
+            </div>
+        </div>
+    )
+}
 
 function InspField({ field, value, assetOptions = [], onChange }) {
     if (field.type === 'checkbox') {
@@ -82,18 +139,18 @@ function InspField({ field, value, assetOptions = [], onChange }) {
         )
     }
 
-    const isNum = field.type === 'number'
+    if (field.type === 'number') {
+        return <InspNumber field={field} value={value} onChange={onChange} />
+    }
+
     return (
         <div className="insp-field">
             <label className="insp-label">{field.label}</label>
             <input
-                type={isNum ? 'number' : 'text'}
+                type="text"
                 className="insp-input"
-                value={isNum && !Number.isFinite(Number(value)) ? 0 : (value ?? '')}
-                min={isNum ? field.min : undefined}
-                max={isNum ? field.max : undefined}
-                step={isNum ? (field.step ?? 0.1) : undefined}
-                onChange={(e) => onChange(isNum ? Number(e.target.value) : e.target.value)}
+                value={value ?? ''}
+                onChange={(e) => onChange(e.target.value)}
             />
         </div>
     )
