@@ -7,7 +7,7 @@ Updated at the end of every session. Replace content — do not append.
 
 ## Last commit
 
-`(this session)` — feat: multi-file code editor + resizable panels in Studio — file tabs, zip/folder import, inline bundler, export, drag-resize all three panels
+`(this session)` — fix: expose interaction mode toggle in V1 editor so objects can be dragged on desktop
 Branch focus: active development on `dev`; promote through `staging` for live verification.
 
 ## What works
@@ -49,6 +49,7 @@ Then: `npm run space:pull -- n000` or use the buttons in the BetaHub UI.
 | Staging serves old build after push | Actions workflow still running | Wait 2–3 min: `gh run list --workflow publish-cpanel-prebuilt-v2.yml` | `.github/workflows/` |
 | `assetId is required` on upload | Dead `|| crypto.randomUUID()` fallback removed | SHA-256 must be computed before calling `buildProjectAssetMeta` | `serverXR/src/projectStore.js` |
 | 503 after deploy (server crashes on start) | `shared/projectSchema.cjs` out of sync with `src/shared/projectSchema.js` | Always update both files together; CJS is what serverXR actually loads | `shared/projectSchema.cjs` |
+| V1 `/main` objects not draggable | `interaction-mode` button excluded from desktop controls; UI hidden by default gives no affordance to switch to Edit mode | Removed `'interaction-mode'` from exclusion filter in `EditorLayoutContainer`; added it to `hiddenUiButtons` + `EditorOverlays` filter so "Mode: Edit/Navigate" button shows even when UI is hidden | `src/components/EditorLayoutContainer.jsx`, `src/hooks/useControlButtons.js`, `src/components/EditorOverlays.jsx` |
 
 ## Deploy
 
