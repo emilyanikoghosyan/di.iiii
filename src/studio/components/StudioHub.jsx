@@ -31,7 +31,7 @@ import {
     uploadProjectAsset
 } from '../../project/services/projectsApi.js'
 import { getServerSpace, updateServerSpace } from '../../services/serverSpaces.js'
-import { buildStudioProjectPath, navigateToStudioPath } from '../utils/studioRouting.js'
+import { buildStudioProjectPath, buildStudioSpacesPath, navigateToStudioPath } from '../utils/studioRouting.js'
 
 const formatProjectSourceLabel = (source = '') => {
     switch (source) {
@@ -187,6 +187,17 @@ export default function StudioHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
         <Box className="studio-shell-root studio-hub-root">
             <Container maxWidth="xl" sx={{ py: { xs: 3, md: 4 } }}>
                 <Stack spacing={3}>
+                    <Box>
+                        <Button
+                            size="small"
+                            variant="text"
+                            color="inherit"
+                            sx={{ opacity: 0.6, '&:hover': { opacity: 1 } }}
+                            onClick={() => navigateToStudioPath(buildStudioSpacesPath())}
+                        >
+                            ← All Spaces
+                        </Button>
+                    </Box>
                     <Stack
                         direction={{ xs: 'column', lg: 'row' }}
                         spacing={3}
