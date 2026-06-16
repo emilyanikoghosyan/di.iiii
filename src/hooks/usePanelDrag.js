@@ -16,6 +16,12 @@ export function usePanelDrag(initialPosition = { x: 0, y: 0 }, options = {}) {
         el.style.transform = `translate(${offset.x}px, ${offset.y}px)`
     }, [offset])
 
+    // Clamp initial position after mount when element dimensions are known
+    useEffect(() => {
+        setOffset((prev) => clampToViewport(prev.x, prev.y))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
     const clampToViewport = (x, y) => {
         const el = panelRef.current
         const vw = typeof window !== 'undefined' ? window.innerWidth : 0
