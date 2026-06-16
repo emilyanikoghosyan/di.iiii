@@ -9,7 +9,7 @@ active_branch: dev
 
 ## Last commit
 
-`(this session)` — fix: expose interaction mode toggle in V1 editor so objects can be dragged on desktop
+`a0bd700` — fix: sync studio and automation updates
 Branch focus: active development on `dev`; promote through `staging` for live verification.
 
 ## What works
