@@ -26,6 +26,12 @@ export default function StudioControlCluster({
     xrState,
     syncState,
     presence,
+    snapEdges = false,
+    onToggleSnap,
+    onTileLayout,
+    onStackLeft,
+    onStackRight,
+    onResetLayout,
 }) {
     const [collapsed, setCollapsed] = useState(false)
 
@@ -127,6 +133,17 @@ export default function StudioControlCluster({
                                 </div>
                             </div>
                         )}
+
+                        <div className="scc-section">
+                            <div className="scc-section-label">Arrange</div>
+                            <div className="scc-buttons">
+                                <button className="scc-btn" onClick={onTileLayout} title="Auto-tile open panels (Shift+A)">⊞ Tile</button>
+                                <button className="scc-btn" onClick={onResetLayout} title="Reset panel positions (Shift+R)">↺ Reset</button>
+                                <button className="scc-btn" onClick={onStackLeft} title="Stack panels left">← Stack</button>
+                                <button className="scc-btn" onClick={onStackRight} title="Stack panels right">Stack →</button>
+                                <button className={`scc-btn ${snapEdges ? 'active' : ''}`} onClick={onToggleSnap} title="Snap to screen edges">⌖ Snap</button>
+                            </div>
+                        </div>
 
                         {presence?.users?.length > 0 && (
                             <div className="scc-presence">

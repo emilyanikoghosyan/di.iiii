@@ -11,10 +11,11 @@ export default function StudioFloatingPanel({
     maxWidth = 640,
     minHeight = 80,
     maxHeight = 900,
+    snapEdges = false,
     children
 }) {
     const [collapsed, setCollapsed] = useState(false)
-    const { panelRef, dragProps, dragStyle, panelPointerProps } = usePanelDrag(initialPosition)
+    const { panelRef, dragProps, dragStyle, panelPointerProps } = usePanelDrag(initialPosition, { snapEdges })
     const { width, height, resizerProps } = usePanelResize(initialWidth, {
         min: minWidth,
         max: maxWidth,

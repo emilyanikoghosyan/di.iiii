@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 let globalZIndex = 1000
 
 export function usePanelDrag(initialPosition = { x: 0, y: 0 }, options = {}) {
-    const { baseZ = 100 } = options
+    const { baseZ = 100, snapEdges = false } = options
     const panelRef = useRef(null)
     const dragStateRef = useRef(null)
     const [offset, setOffset] = useState(initialPosition)
@@ -26,10 +26,16 @@ export function usePanelDrag(initialPosition = { x: 0, y: 0 }, options = {}) {
         const padding = 8
         const maxX = Math.max(padding, vw - width - padding)
         const maxY = Math.max(padding, vh - height - padding)
-        return {
-            x: Math.min(Math.max(x, padding), maxX),
-            y: Math.min(Math.max(y, padding), maxY)
+        let cx = Math.min(Math.max(x, padding), maxX)
+        let cy = Math.min(Math.max(y, padding), maxY)
+        if (snapEdges) {
+            const snap = 20
+            if (cx - padding < snap) cx = padding
+            else if (maxX - cx < snap) cx = maxX
+            if (cy - padding < snap) cy = padding
+            else if (maxY - cy < snap) cy = maxY
         }
+        return { x: cx, y: cy }
     }
 
     const handlePointerMove = useCallback((event) => {
