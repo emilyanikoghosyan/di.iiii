@@ -1,85 +1,137 @@
 import { useCallback, useRef, useState } from 'react'
 import StudioPresentationSurface from './StudioPresentationSurface.jsx'
 
-const PRESETS = {
-    perspective: { label: 'Persp', position: [0, 2.4, 6.5], target: [0, 0.75, 0], fov: 50 },
-    top:         { label: 'Top',   position: [0, 30, 0.001], target: [0, 0, 0], fov: 50, projection: 'orthographic' },
-    bottom:      { label: 'Bot',   position: [0, -30, 0.001], target: [0, 0, 0], fov: 50, projection: 'orthographic' },
-    front:       { label: 'Front', position: [0, 0, 30], target: [0, 0, 0], fov: 50, projection: 'orthographic' },
-    back:        { label: 'Back',  position: [0, 0, -30], target: [0, 0, 0], fov: 50, projection: 'orthographic' },
-    right:       { label: 'Right', position: [30, 0, 0], target: [0, 0, 0], fov: 50, projection: 'orthographic' },
-    left:        { label: 'Left',  position: [-30, 0, 0], target: [0, 0, 0], fov: 50, projection: 'orthographic' },
+const VIEWS = {
+    perspective: { label: 'Perspective', position: [4, 3, 6.5],   target: [0, 0.75, 0], ortho: false },
+    top:         { label: 'Top',         position: [0, 30, 0.001], target: [0, 0, 0],    ortho: true  },
+    bottom:      { label: 'Bottom',      position: [0, -30, 0.001],target: [0, 0, 0],    ortho: true  },
+    front:       { label: 'Front',       position: [0, 0, 30],     target: [0, 0, 0],    ortho: true  },
+    back:        { label: 'Back',        position: [0, 0, -30],    target: [0, 0, 0],    ortho: true  },
+    right:       { label: 'Right',       position: [30, 0, 0],     target: [0, 0, 0],    ortho: true  },
+    left:        { label: 'Left',        position: [-30, 0, 0],    target: [0, 0, 0],    ortho: true  },
+}
+
+// Isometric axis gizmo — like Blender's orientation widget
+function AxisGizmo({ current, onSelect }) {
+    const C = 28, R = 19
+
+    // Projected axis positions (isometric layout)
+    const pts = {
+        right:  { x: C + R,         y: C,             r: 5.5, fill: '#d44',  neg: false },
+        left:   { x: C - R,         y: C,             r: 4,   fill: '#833',  neg: true  },
+        top:    { x: C,             y: C - R,          r: 5.5, fill: '#4a4',  neg: false },
+        bottom: { x: C,             y: C + R,          r: 4,   fill: '#262',  neg: true  },
+        front:  { x: C + R * 0.62, y: C + R * 0.62,   r: 5.5, fill: '#44b',  neg: false },
+        back:   { x: C - R * 0.62, y: C - R * 0.62,   r: 4,   fill: '#224',  neg: true  },
+    }
+
+    const axes = [
+        { a: 'right', b: 'left',   stroke: '#d44' },
+        { a: 'top',   b: 'bottom', stroke: '#4a4' },
+        { a: 'front', b: 'back',   stroke: '#44b' },
+    ]
+
+    return (
+        <svg width="56" height="56" className="svl-gizmo">
+            <circle cx={C} cy={C} r="27" fill="rgba(8,8,12,0.55)" />
+
+            {axes.map(({ a, b, stroke }) => (
+                <line
+                    key={a}
+                    x1={pts[a].x} y1={pts[a].y}
+                    x2={pts[b].x} y2={pts[b].y}
+                    stroke={stroke}
+                    strokeWidth="1.5"
+                    opacity="0.45"
+                />
+            ))}
+
+            {/* Negative ends behind, positive in front */}
+            {Object.entries(pts).filter(([, p]) => p.neg).map(([key, p]) => (
+                <circle key={key} cx={p.x} cy={p.y} r={p.r}
+                    fill={current === key ? '#fff' : p.fill}
+                    opacity={current === key ? 1 : 0.4}
+                    onClick={() => onSelect(key)}
+                    style={{ cursor: 'pointer' }}
+                />
+            ))}
+            {Object.entries(pts).filter(([, p]) => !p.neg).map(([key, p]) => (
+                <circle key={key} cx={p.x} cy={p.y} r={p.r}
+                    fill={current === key ? '#fff' : p.fill}
+                    opacity={current === key ? 1 : 0.85}
+                    onClick={() => onSelect(key)}
+                    style={{ cursor: 'pointer' }}
+                />
+            ))}
+
+            {/* Center = perspective */}
+            <circle cx={C} cy={C} r="4.5"
+                fill={current === 'perspective' ? '#fff' : 'rgba(255,255,255,0.35)'}
+                onClick={() => onSelect('perspective')}
+                style={{ cursor: 'pointer' }}
+            />
+        </svg>
+    )
 }
 
 function ViewPane({ node, isRoot, onSplit, onClose, shared }) {
-    const [presetKey, setPresetKey] = useState('perspective')
-    const [fov, setFov] = useState(50)
-    const [ortho, setOrtho] = useState(false)
-    const [showSettings, setShowSettings] = useState(false)
+    const [viewKey, setViewKey]     = useState('perspective')
+    const [remountKey, setRemount]  = useState(0)
+    const controlsRef               = useRef(null)
 
-    const preset = PRESETS[presetKey]
-    const cameraView = { ...preset, fov, projection: ortho ? 'orthographic' : undefined }
+    const switchView = useCallback((key) => {
+        if (key === viewKey) return
+        const from = VIEWS[viewKey]
+        const to   = VIEWS[key]
+        setViewKey(key)
 
-    const handlePreset = (key) => {
-        setPresetKey(key)
-        const p = PRESETS[key]
-        setFov(p.fov)
-        setOrtho(!!p.projection)
+        if (from.ortho !== to.ortho) {
+            // Camera type change — must remount canvas
+            setRemount((k) => k + 1)
+        } else {
+            // Imperative move — no flicker
+            const ctrl = controlsRef.current
+            if (ctrl) {
+                const [px, py, pz] = to.position
+                ctrl.object.position.set(px, py, pz)
+                ctrl.target.set(...to.target)
+                ctrl.update()
+            }
+        }
+    }, [viewKey])
+
+    const view = VIEWS[viewKey]
+    const cameraView = {
+        position: view.position,
+        target: view.target,
+        fov: 50,
+        projection: view.ortho ? 'orthographic' : undefined,
     }
 
     return (
         <div className="svl-pane">
-            <div className="svl-toolbar">
-                <select
-                    className="svl-cam"
-                    value={presetKey}
-                    onChange={(e) => handlePreset(e.target.value)}
-                >
-                    {Object.entries(PRESETS).map(([key, p]) => (
-                        <option key={key} value={key}>{p.label}</option>
-                    ))}
-                </select>
-
-                <button
-                    className={`svl-tbtn ${ortho ? 'svl-tbtn--active' : ''}`}
-                    onClick={() => setOrtho((v) => !v)}
-                    title="Toggle orthographic"
-                >O</button>
-
-                <button
-                    className="svl-tbtn"
-                    onClick={() => setShowSettings((v) => !v)}
-                    title="Camera settings"
-                >⚙</button>
-
-                <div className="svl-toolbar-actions">
-                    <button className="svl-tbtn" onClick={() => onSplit(node.id, 'h')} title="Split left/right">H</button>
-                    <button className="svl-tbtn" onClick={() => onSplit(node.id, 'v')} title="Split top/bottom">V</button>
-                    {!isRoot && (
-                        <button className="svl-tbtn svl-tbtn--close" onClick={() => onClose(node.id)} title="Close pane">×</button>
-                    )}
-                </div>
+            {/* Split / close — top-left, appear on hover */}
+            <div className="svl-pane-controls">
+                <button className="svl-ctrl-btn" onClick={() => onSplit(node.id, 'h')} title="Split left/right">H</button>
+                <button className="svl-ctrl-btn" onClick={() => onSplit(node.id, 'v')} title="Split top/bottom">V</button>
+                {!isRoot && (
+                    <button className="svl-ctrl-btn svl-ctrl-btn--close" onClick={() => onClose(node.id)} title="Close pane">×</button>
+                )}
             </div>
 
-            {showSettings && (
-                <div className="svl-settings">
-                    <label className="svl-settings-row">
-                        <span>FOV</span>
-                        <input
-                            type="range"
-                            min={10} max={120} step={1}
-                            value={fov}
-                            onChange={(e) => setFov(Number(e.target.value))}
-                            disabled={ortho}
-                        />
-                        <span>{fov}°</span>
-                    </label>
-                </div>
-            )}
+            {/* Axis gizmo — top-right like Blender */}
+            <div className="svl-gizmo-wrap">
+                <AxisGizmo current={viewKey} onSelect={switchView} />
+            </div>
+
+            {/* View label — bottom-left like Blender */}
+            <div className="svl-view-label">
+                {view.label}{view.ortho ? ' · Ortho' : ''}
+            </div>
 
             <div className="svl-canvas">
                 <StudioPresentationSurface
-                    key={`${node.id}-${presetKey}-${ortho}`}
+                    key={`${node.id}-${remountKey}`}
                     document={shared.document}
                     selectedEntityId={shared.selectedEntityId}
                     onSelectEntity={shared.onSelectEntity}
@@ -91,6 +143,7 @@ function ViewPane({ node, isRoot, onSplit, onClose, shared }) {
                     gizmoMode={shared.gizmoMode}
                     onTransformCommit={shared.onTransformCommit}
                     cameraView={cameraView}
+                    controlsRef={controlsRef}
                 />
             </div>
         </div>
@@ -98,7 +151,7 @@ function ViewPane({ node, isRoot, onSplit, onClose, shared }) {
 }
 
 function SplitContainer({ node, onSplit, onClose, setRatio, shared }) {
-    const containerRef = useRef(null)
+    const containerRef  = useRef(null)
     const [ratio, setLocalRatio] = useState(node.ratio ?? 0.5)
 
     const onHandleDown = useCallback((e) => {
@@ -109,7 +162,7 @@ function SplitContainer({ node, onSplit, onClose, setRatio, shared }) {
             const rect = el.getBoundingClientRect()
             const r = node.dir === 'h'
                 ? (ev.clientX - rect.left) / rect.width
-                : (ev.clientY - rect.top) / rect.height
+                : (ev.clientY - rect.top)  / rect.height
             const clamped = Math.min(Math.max(r, 0.1), 0.9)
             setLocalRatio(clamped)
             setRatio(node.id, clamped)
@@ -122,8 +175,8 @@ function SplitContainer({ node, onSplit, onClose, setRatio, shared }) {
         window.addEventListener('pointerup', onUp)
     }, [node.dir, node.id, setRatio])
 
-    const aStyle = node.dir === 'h' ? { width: `${ratio * 100}%` } : { height: `${ratio * 100}%` }
-    const bStyle = node.dir === 'h' ? { width: `${(1 - ratio) * 100}%` } : { height: `${(1 - ratio) * 100}%` }
+    const aStyle = node.dir === 'h' ? { width: `${ratio * 100}%` }     : { height: `${ratio * 100}%` }
+    const bStyle = node.dir === 'h' ? { width: `${(1-ratio)*100}%` }   : { height: `${(1-ratio)*100}%` }
 
     return (
         <div ref={containerRef} className={`svl-split svl-split--${node.dir}`}>
