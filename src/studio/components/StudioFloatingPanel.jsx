@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { usePanelDrag } from '../../hooks/usePanelDrag.js'
 import { usePanelResize } from '../../hooks/usePanelResize.js'
 
@@ -12,6 +13,7 @@ export default function StudioFloatingPanel({
     maxHeight = 900,
     children
 }) {
+    const [collapsed, setCollapsed] = useState(false)
     const { panelRef, dragProps, dragStyle, panelPointerProps } = usePanelDrag(initialPosition)
     const { width, height, resizerProps } = usePanelResize(initialWidth, {
         min: minWidth,
@@ -29,14 +31,25 @@ export default function StudioFloatingPanel({
         >
             <div className="sfp-header" {...dragProps}>
                 <span className="sfp-title">{title}</span>
+                <button
+                    className="scc-collapse-btn"
+                    onClick={() => setCollapsed((v) => !v)}
+                    title={collapsed ? 'Expand' : 'Collapse'}
+                >
+                    {collapsed ? '▸' : '▾'}
+                </button>
                 {onClose && (
                     <button className="sfp-close" onClick={onClose} title="Close">×</button>
                 )}
             </div>
-            <div className="sfp-content" style={height ? { height } : undefined}>
-                {children}
-            </div>
-            <div className="sfp-resizer" {...resizerProps} />
+            {!collapsed && (
+                <>
+                    <div className="sfp-content" style={height ? { height } : undefined}>
+                        {children}
+                    </div>
+                    <div className="sfp-resizer" {...resizerProps} />
+                </>
+            )}
         </div>
     )
 }
