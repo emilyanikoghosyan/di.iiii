@@ -17,8 +17,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile'
 import HistoryIcon from '@mui/icons-material/History'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { appNavigate } from '../../utils/appNavigate.js'
-import { buildAppSpacePath } from '../../utils/spaceRouting.js'
-import { buildPreferencesPath } from '../../utils/spaceRouting.js'
+import { buildAppSpacePath, buildPreferencesPath } from '../../utils/spaceRouting.js'
 import { buildBetaHubPath } from '../../beta/utils/betaRouting.js'
 import { importLegacySceneFile } from '../../project/import/importLegacyScene.js'
 import {
@@ -30,7 +29,7 @@ import {
     uploadProjectAsset
 } from '../../project/services/projectsApi.js'
 import { getServerSpace, updateServerSpace } from '../../services/serverSpaces.js'
-import { buildStudioProjectPath, buildStudioSpacesPath, navigateToStudioPath } from '../utils/studioRouting.js'
+import { buildStudioProjectPath, navigateToStudioPath } from '../utils/studioRouting.js'
 
 const formatProjectSourceLabel = (source = '') => {
     switch (source) {
@@ -49,25 +48,6 @@ const formatProjectSourceLabel = (source = '') => {
             return source
     }
 }
-
-const studioWorkflowSteps = [
-    {
-        title: 'Create or open a space',
-        body: 'Use the spaces panel or admin route to create the server-backed space shell.'
-    },
-    {
-        title: 'Develop in Studio',
-        body: 'Create projects here, import legacy scenes, and keep the main working copy in this lane.'
-    },
-    {
-        title: 'Promote when ready',
-        body: 'Set the live project for the space and send viewers to the public route.'
-    },
-    {
-        title: 'Use Beta for experiments',
-        body: 'Hand off node-first or research changes to Beta before they become the stable path.'
-    }
-]
 
 export default function StudioHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
     const [projects, setProjects] = useState([])
@@ -177,17 +157,6 @@ export default function StudioHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
         <Box className="studio-shell-root studio-hub-root">
             <Container maxWidth="xl" sx={{ py: { xs: 3, md: 4 } }}>
                 <Stack spacing={3}>
-                    <Box>
-                        <Button
-                            size="small"
-                            variant="text"
-                            color="inherit"
-                            sx={{ opacity: 0.6, '&:hover': { opacity: 1 } }}
-                            onClick={() => navigateToStudioPath(buildStudioSpacesPath())}
-                        >
-                            ← All Spaces
-                        </Button>
-                    </Box>
                     <Stack
                         direction={{ xs: 'column', lg: 'row' }}
                         spacing={3}
@@ -195,13 +164,9 @@ export default function StudioHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
                         alignItems={{ xs: 'stretch', lg: 'flex-start' }}
                     >
                         <Stack spacing={1.25} sx={{ maxWidth: 720 }}>
-                            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                                <Chip label="Stable Studio" color="primary" sx={{ alignSelf: 'flex-start' }} />
-                                <Chip label={`Space ${spaceId}`} variant="outlined" sx={{ alignSelf: 'flex-start' }} />
-                            </Stack>
-                            <Typography variant="h3" fontWeight={800}>Studio Projects</Typography>
+                            <Typography variant="h3" fontWeight={800}>Studio</Typography>
                             <Typography variant="body1" color="text.secondary">
-                                Studio is the stable main authoring workspace for this space. Use it for project-based work, imports, publishing, and the primary long-term workflow.
+                                Create and open 3D projects. Import legacy scenes, publish to a public URL, or hand off to the Beta node editor.
                             </Typography>
                         </Stack>
                         <Stack
@@ -279,37 +244,6 @@ export default function StudioHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
                             </Stack>
                         </Stack>
                     </Stack>
-
-                    <Card variant="outlined" sx={{ bgcolor: 'rgba(255,255,255,0.03)' }}>
-                        <CardContent>
-                            <Stack spacing={2}>
-                                <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" flexWrap="wrap" useFlexGap>
-                                    <Typography variant="overline" color="text.secondary">Workflow</Typography>
-                                    <Chip label="Space → Studio → Public" size="small" variant="outlined" />
-                                </Stack>
-                                <Grid container spacing={1.5}>
-                                    {studioWorkflowSteps.map((step, index) => (
-                                        <Grid key={step.title} size={{ xs: 12, md: 6, xl: 3 }}>
-                                            <Stack
-                                                spacing={1}
-                                                sx={{
-                                                    height: '100%',
-                                                    p: 1.5,
-                                                    border: '1px solid',
-                                                    borderColor: 'divider',
-                                                    borderRadius: 2,
-                                                    bgcolor: index === 0 ? 'rgba(255,255,255,0.02)' : 'transparent'
-                                                }}
-                                            >
-                                                <Typography variant="subtitle2" fontWeight={700}>{step.title}</Typography>
-                                                <Typography variant="body2" color="text.secondary">{step.body}</Typography>
-                                            </Stack>
-                                        </Grid>
-                                    ))}
-                                </Grid>
-                            </Stack>
-                        </CardContent>
-                    </Card>
 
                     {status ? <Alert severity={status.includes('Unable') ? 'error' : 'info'}>{status}</Alert> : null}
                     {importWarnings.length ? (
