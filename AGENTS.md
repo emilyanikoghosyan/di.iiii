@@ -1,6 +1,6 @@
 # AGENTS
 
-Short routing guide for AI agents working in `di.i`.
+Short routing guide for AI agents working in `di.iiii`.
 
 ## Start Here
 

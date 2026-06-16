@@ -1,6 +1,6 @@
-# di.i Deck Context
+# di.iiii Deck Context
 
-This folder is the public-context lane for `di.i` deck, CV, portfolio, and proof materials.
+This folder is the public-context lane for `di.iiii` deck, CV, portfolio, and proof materials.
 
 Use it for:
 

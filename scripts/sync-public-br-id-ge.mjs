@@ -31,8 +31,9 @@ if (!destDir || destDir === ROOT_DIR) {
     throw new Error('Pass --dest <path> or set PUBLIC_BR_ID_GE_DEST to a cloned dob-0/br_id_ge checkout.')
 }
 
+// README.md is intentionally excluded — br_id_ge maintains its own README.
+// Syncing di.iiii's README would overwrite br_id_ge's project-specific content.
 const SYNC_FILES = [
-    'README.md',
     'DEVELOPMENT.md',
     'index.html',
     'docs/PROJECT.md',

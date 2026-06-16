@@ -21,7 +21,7 @@ const WINDOW_IDS = ['viewport', 'assets', 'inspector', 'outliner', 'activity', '
 
 const LEGACY_ROOT_NODE_IDS = new Set(['root-node', 'world-root', 'view-root'])
 const LEGACY_ROOT_TYPE_IDS = new Set(['core.project', 'world.root', 'view.root'])
-const SINGLETON_TYPE_IDS = new Set(['time', 'source.ar', 'world.light', 'world.background', 'world.grid'])
+const SINGLETON_TYPE_IDS = new Set(['time', 'source.ar', 'world.light', 'world.background', 'world.grid', 'universe.world'])
 
 const cloneValue = (value) => {
   if (Array.isArray(value)) {

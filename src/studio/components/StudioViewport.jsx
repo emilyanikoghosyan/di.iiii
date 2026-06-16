@@ -1,6 +1,6 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Canvas } from '@react-three/fiber'
-import { Grid, Html, OrbitControls, TransformControls } from '@react-three/drei'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { CameraControls, Grid, Html, TransformControls } from '@react-three/drei'
 import { XR, useXR } from '@react-three/xr'
 import BoxObject from '../../objectComponents/BoxObject.jsx'
 import SphereObject from '../../objectComponents/SphereObject.jsx'
@@ -209,34 +209,89 @@ function SelectableEntity({ entity, assetMap, selected, editMode, gizmoMode, onS
     )
 }
 
-function StudioOrbit({ controlsRef, cameraView, onCameraChange, enabled = true }) {
+// ACTION values from camera-controls (binary flags):
+const CC_ACTION = { NONE: 0, ROTATE: 1, TRUCK: 2, SCREEN_PAN: 4, OFFSET: 8, DOLLY: 16, ZOOM: 32,
+    TOUCH_DOLLY_TRUCK: 4096 }
+
+function StudioOrbit({ controlsRef, cameraView, onCameraChange, onRotateStart, enabled = true }) {
     const isXrPresenting = useXR((state) => state.session != null)
 
-    if (isXrPresenting || !enabled) {
-        return null
-    }
+    const targetFovRef = useRef(cameraView?.fov || 50)
+
+    // Set initial position+target once the controls mount
+    useEffect(() => {
+        const cc = controlsRef.current
+        if (!cc || !cameraView) return
+        const [px, py, pz] = cameraView.position || [0, 2.4, 6.5]
+        const [tx, ty, tz] = cameraView.target || [0, 0.75, 0]
+        cc.setLookAt(px, py, pz, tx, ty, tz, false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    // Track target FOV when the view changes
+    useEffect(() => {
+        if (cameraView?.fov != null) targetFovRef.current = cameraView.fov
+    }, [cameraView?.fov])
+
+    // In ortho views (small FOV), left drag pans instead of rotating so you can
+    // navigate the locked view and arrange objects — same as Blender's ortho behavior
+    useEffect(() => {
+        const cc = controlsRef.current
+        if (!cc) return
+        const isOrtho = (cameraView?.fov ?? 50) < 20
+        cc.mouseButtons.left = isOrtho ? CC_ACTION.TRUCK : CC_ACTION.ROTATE
+    }, [cameraView?.fov])
+
+    // Smooth FOV lerp — runs every frame inside the R3F canvas
+    useFrame(() => {
+        const cc = controlsRef.current
+        if (!cc) return
+        const cam = cc._camera
+        if (!cam?.isPerspectiveCamera) return
+        const target = targetFovRef.current
+        if (Math.abs(cam.fov - target) < 0.05) return
+        cam.fov += (target - cam.fov) * 0.08
+        cam.updateProjectionMatrix()
+    })
+
+    // Break out of ortho when the user starts rotating
+    useEffect(() => {
+        const cc = controlsRef.current
+        if (!cc || !onRotateStart) return
+        const handleStart = () => {
+            if (cc._state === 1 /* ACTION.ROTATE */) onRotateStart()
+        }
+        cc.addEventListener('controlstart', handleStart)
+        return () => cc.removeEventListener('controlstart', handleStart)
+    }, [onRotateStart])
+
+    if (isXrPresenting || !enabled) return null
 
     return (
-        <OrbitControls
+        <CameraControls
             ref={controlsRef}
             makeDefault
-            enableDamping
-            dampingFactor={0.2}
-            rotateSpeed={0.85}
-            panSpeed={0.9}
-            zoomSpeed={0.9}
-            zoomToCursor
-            screenSpacePanning
+            dollyToCursor
+            smoothTime={0.15}
+            draggingSmoothTime={0.0}
             minDistance={0.35}
-            maxDistance={250}
-            target={cameraView?.target || [0, 0.75, 0]}
-            onEnd={() => {
-                const camera = controlsRef.current?.object
-                const target = controlsRef.current?.target
-                if (!camera || !target) return
-                onCameraChange?.({
-                    position: camera.position.toArray(),
-                    target: target.toArray()
+            maxDistance={500}
+            mouseButtons={{
+                left: CC_ACTION.ROTATE,
+                middle: CC_ACTION.DOLLY,
+                right: CC_ACTION.TRUCK,
+                wheel: CC_ACTION.DOLLY,
+            }}
+            touches={{
+                one: CC_ACTION.ROTATE,
+                two: CC_ACTION.TOUCH_DOLLY_TRUCK,
+            }}
+            onControlEnd={() => {
+                const cc = controlsRef.current
+                if (!cc || !onCameraChange) return
+                onCameraChange({
+                    position: cc._camera.position.toArray(),
+                    target: cc._target.toArray(),
                 })
             }}
         />
@@ -428,6 +483,7 @@ export default function StudioViewport({
     onCursorLeave,
     cameraView,
     onCameraChange,
+    onRotateStart,
     controlsRef,
     xrStore,
     editMode = 'navigate',
@@ -466,7 +522,7 @@ export default function StudioViewport({
                     fov: camera.fov || 50,
                     zoom: camera.zoom || 1,
                     near: camera.near || 0.1,
-                    far: camera.far || 200,
+                    far: camera.far || 1000,
                     orthographic: camera.projection === 'orthographic'
                 }}
                 onPointerMissed={() => onSelectEntity?.(null)}
@@ -476,6 +532,7 @@ export default function StudioViewport({
                         controlsRef={controlsRef}
                         cameraView={camera}
                         onCameraChange={onCameraChange}
+                        onRotateStart={onRotateStart}
                         enabled={enableNavigation}
                     />
                     <StudioSceneContent

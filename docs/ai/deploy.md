@@ -12,6 +12,7 @@ This page is the AI-safe deployment map. Keep host-specific or secret material o
 ## Main Places To Read
 
 - human deploy runbook: [../deploy/LIVE_DEPLOY.md](../deploy/LIVE_DEPLOY.md)
+- publish content to a space (Options A–D): [../deploy/PUBLISH_WORKFLOW.md](../deploy/PUBLISH_WORKFLOW.md)
 - cPanel bundle notes: [../../deploy/cpanel/DEPLOY.md](../../deploy/cpanel/DEPLOY.md)
 - backend runtime contract: [../../serverXR/README.md](../../serverXR/README.md)
 - automation entrypoint: [../../scripts/AGENTS.md](../../scripts/AGENTS.md)

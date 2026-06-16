@@ -36,6 +36,7 @@ export default function StudioPresentationSurface({
     controlsRef,
     xrStore,
     onCameraChange,
+    onRotateStart,
     editMode,
     gizmoMode,
     setEditMode,
@@ -122,6 +123,7 @@ export default function StudioPresentationSurface({
             controlsRef={controlsRef}
             xrStore={xrStore}
             onCameraChange={onCameraChange}
+            onRotateStart={onRotateStart}
             editMode={editMode}
             gizmoMode={gizmoMode}
             setEditMode={setEditMode}

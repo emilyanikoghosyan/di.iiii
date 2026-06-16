@@ -1,14 +1,16 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import StudioPresentationSurface from './StudioPresentationSurface.jsx'
 
+// All views use PerspectiveCamera. "Ortho" views fake it: large distance + small FOV ≈ parallel projection.
+// This lets every transition (including ortho↔perspective) animate smoothly with setLookAt.
 const VIEWS = {
-    perspective: { label: 'Perspective', position: [4, 3, 6.5],   target: [0, 0.75, 0], ortho: false },
-    top:         { label: 'Top',         position: [0, 30, 0.001], target: [0, 0, 0],    ortho: true  },
-    bottom:      { label: 'Bottom',      position: [0, -30, 0.001],target: [0, 0, 0],    ortho: true  },
-    front:       { label: 'Front',       position: [0, 0, 30],     target: [0, 0, 0],    ortho: true  },
-    back:        { label: 'Back',        position: [0, 0, -30],    target: [0, 0, 0],    ortho: true  },
-    right:       { label: 'Right',       position: [30, 0, 0],     target: [0, 0, 0],    ortho: true  },
-    left:        { label: 'Left',        position: [-30, 0, 0],    target: [0, 0, 0],    ortho: true  },
+    perspective: { label: 'Perspective', position: [4, 3, 6.5],     target: [0, 0.75, 0], fov: 50, ortho: false },
+    top:         { label: 'Top',         position: [0, 150, 0.001],  target: [0, 0, 0],    fov: 6,  ortho: true  },
+    bottom:      { label: 'Bottom',      position: [0, -150, 0.001], target: [0, 0, 0],    fov: 6,  ortho: true  },
+    front:       { label: 'Front',       position: [0, 0.75, 150],   target: [0, 0.75, 0], fov: 6,  ortho: true  },
+    back:        { label: 'Back',        position: [0, 0.75, -150],  target: [0, 0.75, 0], fov: 6,  ortho: true  },
+    right:       { label: 'Right',       position: [150, 0.75, 0],   target: [0, 0.75, 0], fov: 6,  ortho: true  },
+    left:        { label: 'Left',        position: [-150, 0.75, 0],  target: [0, 0.75, 0], fov: 6,  ortho: true  },
 }
 
 // Isometric axis gizmo — like Blender's orientation widget
@@ -75,42 +77,32 @@ function AxisGizmo({ current, onSelect }) {
 }
 
 function ViewPane({ node, isRoot, onSplit, onClose, shared }) {
-    const [viewKey, setViewKey]     = useState('perspective')
-    const [remountKey, setRemount]  = useState(0)
-    const controlsRef               = useRef(null)
+    const [viewKey, setViewKey] = useState('perspective')
+    const controlsRef           = useRef(null)
 
     const switchView = useCallback((key) => {
         if (key === viewKey) return
-        const from = VIEWS[viewKey]
-        const to   = VIEWS[key]
+        const to = VIEWS[key]
         setViewKey(key)
-
-        if (from.ortho !== to.ortho) {
-            setRemount((k) => k + 1)
-        } else {
-            const ctrl = controlsRef.current
-            if (ctrl) {
-                const [px, py, pz] = to.position
-                ctrl.object.position.set(px, py, pz)
-                ctrl.target.set(...to.target)
-                // Disable damping so update() zeros out spherical delta/panOffset
-                // (with damping on, update() only scales them by (1-factor) not to 0)
-                const wasEnabled = ctrl.enableDamping
-                ctrl.enableDamping = false
-                ctrl.update()
-                ctrl.enableDamping = wasEnabled
-            }
+        const cc = controlsRef.current
+        if (cc) {
+            const [px, py, pz] = to.position
+            const [tx, ty, tz] = to.target
+            cc.setLookAt(px, py, pz, tx, ty, tz, true)
         }
     }, [viewKey])
 
+    // Break out of any ortho preset to perspective when the user starts rotating.
+    // Don't call setLookAt here — let the rotation continue from the current position.
+    const onRotateStart = useCallback(() => {
+        if (VIEWS[viewKey]?.ortho) setViewKey('perspective')
+    }, [viewKey])
+
     const view = VIEWS[viewKey]
-    // Memoised so the object reference is stable between re-renders when viewKey hasn't changed.
-    // This prevents Drei's reactive `target` effect from firing on unrelated re-renders.
     const cameraView = useMemo(() => ({
         position: view.position,
         target:   view.target,
-        fov:      50,
-        projection: view.ortho ? 'orthographic' : undefined,
+        fov:      view.fov,
     }), [viewKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
@@ -136,7 +128,7 @@ function ViewPane({ node, isRoot, onSplit, onClose, shared }) {
 
             <div className="svl-canvas">
                 <StudioPresentationSurface
-                    key={`${node.id}-${remountKey}`}
+                    key={node.id}
                     document={shared.document}
                     selectedEntityId={shared.selectedEntityId}
                     onSelectEntity={shared.onSelectEntity}
@@ -149,6 +141,7 @@ function ViewPane({ node, isRoot, onSplit, onClose, shared }) {
                     onTransformCommit={shared.onTransformCommit}
                     cameraView={cameraView}
                     controlsRef={controlsRef}
+                    onRotateStart={onRotateStart}
                 />
             </div>
         </div>
