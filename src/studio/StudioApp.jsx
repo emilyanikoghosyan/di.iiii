@@ -6,7 +6,8 @@ import StudioEditor from './components/StudioEditor.jsx'
 import {
     STUDIO_PAGE_SPACES,
     STUDIO_PAGE_HUB,
-    STUDIO_PAGE_PROJECT
+    STUDIO_PAGE_PROJECT,
+    DEFAULT_STUDIO_SPACE_ID,
 } from './utils/studioRouting.js'
 import './styles/studio.css'
 
@@ -65,9 +66,9 @@ export default function StudioApp({ initialRoute }) {
             return <StudioHub spaceId={route.spaceId} />
         }
         if (route.page === STUDIO_PAGE_SPACES) {
-            return <StudioSpacesHub />
+            return <StudioHub spaceId={DEFAULT_STUDIO_SPACE_ID} />
         }
-        return <StudioSpacesHub />
+        return <StudioHub spaceId={DEFAULT_STUDIO_SPACE_ID} />
     }, [route.page, route.projectId, route.spaceId])
 
     return (
