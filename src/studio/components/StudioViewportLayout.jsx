@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import StudioPresentationSurface from './StudioPresentationSurface.jsx'
 
 const VIEWS = {
@@ -86,27 +86,32 @@ function ViewPane({ node, isRoot, onSplit, onClose, shared }) {
         setViewKey(key)
 
         if (from.ortho !== to.ortho) {
-            // Camera type change — must remount canvas
             setRemount((k) => k + 1)
         } else {
-            // Imperative move — no flicker
             const ctrl = controlsRef.current
             if (ctrl) {
                 const [px, py, pz] = to.position
                 ctrl.object.position.set(px, py, pz)
                 ctrl.target.set(...to.target)
+                // Disable damping so update() zeros out spherical delta/panOffset
+                // (with damping on, update() only scales them by (1-factor) not to 0)
+                const wasEnabled = ctrl.enableDamping
+                ctrl.enableDamping = false
                 ctrl.update()
+                ctrl.enableDamping = wasEnabled
             }
         }
     }, [viewKey])
 
     const view = VIEWS[viewKey]
-    const cameraView = {
+    // Memoised so the object reference is stable between re-renders when viewKey hasn't changed.
+    // This prevents Drei's reactive `target` effect from firing on unrelated re-renders.
+    const cameraView = useMemo(() => ({
         position: view.position,
-        target: view.target,
-        fov: 50,
+        target:   view.target,
+        fov:      50,
         projection: view.ortho ? 'orthographic' : undefined,
-    }
+    }), [viewKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <div className="svl-pane">
