@@ -1,21 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-    Alert,
     Box,
     Button,
-    Card,
-    CardContent,
-    Chip,
     Container,
-    Grid,
     Stack,
     TextField,
-    Typography
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import HistoryIcon from '@mui/icons-material/History'
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { appNavigate } from '../../utils/appNavigate.js'
 import { buildAppSpacePath, buildPreferencesPath } from '../../utils/spaceRouting.js'
 import { buildBetaHubPath } from '../../beta/utils/betaRouting.js'
@@ -30,17 +23,18 @@ import {
 } from '../../project/services/projectsApi.js'
 import { getServerSpace, updateServerSpace } from '../../services/serverSpaces.js'
 import { buildStudioProjectPath, navigateToStudioPath } from '../utils/studioRouting.js'
+import '../styles/studio-hub.css'
 
 const formatProjectSourceLabel = (source = '') => {
     switch (source) {
         case 'studio-v3':
-            return 'Studio Main'
+            return 'Studio'
         case 'legacy-import-studio':
-            return 'Studio import'
+            return 'Imported'
         case 'beta-v2':
             return 'V2 Beta'
         case 'legacy-import':
-            return 'Legacy import'
+            return 'Legacy'
         case 'project':
         case '':
             return 'Project'
@@ -156,29 +150,29 @@ export default function StudioHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
     return (
         <Box className="studio-shell-root studio-hub-root">
             <Container maxWidth="xl" sx={{ py: { xs: 3, md: 4 } }}>
-                <Stack spacing={3}>
+                <Stack spacing={4}>
+
+                    {/* Header */}
                     <Stack
+                        className="sh-header"
                         direction={{ xs: 'column', lg: 'row' }}
                         spacing={3}
                         justifyContent="space-between"
                         alignItems={{ xs: 'stretch', lg: 'flex-start' }}
                     >
-                        <Stack spacing={1.25} sx={{ maxWidth: 720 }}>
-                            <Typography variant="h3" fontWeight={800}>Studio</Typography>
-                            <Typography variant="body1" color="text.secondary">
+                        <Stack spacing={0.5}>
+                            <p className="sh-eyebrow">di.iiii · Studio</p>
+                            <h1 className="sh-title">Projects</h1>
+                            <p className="sh-desc">
                                 Create and open 3D projects. Import legacy scenes, publish to a public URL, or hand off to the Beta node editor.
-                            </Typography>
+                            </p>
                         </Stack>
+
+                        {/* Create panel */}
                         <Stack
+                            className="sh-create-panel"
                             spacing={1.5}
-                            sx={{
-                                width: { xs: '100%', lg: 420 },
-                                p: 2,
-                                border: '1px solid',
-                                borderColor: 'divider',
-                                borderRadius: 2,
-                                bgcolor: 'rgba(255,255,255,0.03)'
-                            }}
+                            sx={{ width: { xs: '100%', lg: 380 }, flexShrink: 0 }}
                         >
                             <TextField
                                 label="Project title"
@@ -186,12 +180,13 @@ export default function StudioHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
                                 value={title}
                                 onChange={(event) => setTitle(event.target.value)}
                             />
-                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
                                 <Button
                                     startIcon={<AddIcon />}
                                     variant="contained"
                                     onClick={handleCreate}
                                     disabled={isBusy}
+                                    sx={{ borderRadius: 0 }}
                                 >
                                     New project
                                 </Button>
@@ -200,8 +195,9 @@ export default function StudioHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
                                     startIcon={<UploadFileIcon />}
                                     variant="outlined"
                                     disabled={isBusy}
+                                    sx={{ borderRadius: 0 }}
                                 >
-                                    Import legacy scene
+                                    Import legacy
                                     <input
                                         hidden
                                         type="file"
@@ -210,87 +206,90 @@ export default function StudioHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
                                     />
                                 </Button>
                             </Stack>
-                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
+                            <Stack direction="row" spacing={0} flexWrap="wrap" useFlexGap>
                                 <Button
                                     variant="text"
                                     color="inherit"
-                                    onClick={() => navigateToStudioPath(buildStudioProjectPath(mostRecentProject.id, spaceId))}
+                                    size="small"
+                                    onClick={() => navigateToStudioPath(buildStudioProjectPath(mostRecentProject?.id, spaceId))}
                                     disabled={!mostRecentProject}
                                     startIcon={<HistoryIcon />}
+                                    sx={{ borderRadius: 0, fontSize: '0.75rem', color: 'var(--di-text-muted)', textTransform: 'none' }}
                                 >
                                     Reopen latest
                                 </Button>
                                 <Button
                                     variant="text"
+                                    size="small"
                                     color="inherit"
                                     onClick={() => appNavigate(buildAppSpacePath(spaceId))}
+                                    sx={{ borderRadius: 0, fontSize: '0.75rem', color: 'var(--di-text-muted)', textTransform: 'none' }}
                                 >
-                                    Open public route
+                                    Public view
                                 </Button>
                                 <Button
                                     variant="text"
+                                    size="small"
                                     color="inherit"
                                     onClick={() => appNavigate(buildBetaHubPath(spaceId))}
+                                    sx={{ borderRadius: 0, fontSize: '0.75rem', color: 'var(--di-text-muted)', textTransform: 'none' }}
                                 >
-                                    Open beta experimental
+                                    Beta
                                 </Button>
                                 <Button
                                     variant="text"
+                                    size="small"
                                     color="inherit"
                                     onClick={() => appNavigate(buildPreferencesPath(spaceId))}
+                                    sx={{ borderRadius: 0, fontSize: '0.75rem', color: 'var(--di-text-muted)', textTransform: 'none' }}
                                 >
-                                    Open admin
+                                    Admin
                                 </Button>
                             </Stack>
                         </Stack>
                     </Stack>
 
-                    {status ? <Alert severity={status.includes('Unable') ? 'error' : 'info'}>{status}</Alert> : null}
+                    {/* Status */}
+                    {status ? (
+                        <p className={`sh-status${status.includes('Unable') ? ' sh-status-error' : ''}`}>
+                            {status}
+                        </p>
+                    ) : null}
                     {importWarnings.length ? (
-                        <Alert severity="warning">
-                            {importWarnings.join(' ')}
-                        </Alert>
+                        <p className="sh-warn">{importWarnings.join(' ')}</p>
                     ) : null}
 
-                    <Grid container spacing={2}>
-                        {projects.map((project) => (
-                            <Grid key={project.id} size={{ xs: 12, md: 6, xl: 4 }}>
-                                <Card sx={{ height: '100%' }}>
-                                    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minHeight: 190 }}>
-                                        <Stack direction="row" justifyContent="space-between" spacing={1}>
-                                            <Typography variant="h6" fontWeight={700}>{project.title}</Typography>
-                                            <ArrowForwardIcon color="primary" />
-                                        </Stack>
-                                        <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-word' }}>
-                                            {project.id}
-                                        </Typography>
-                                        <Box sx={{ flex: 1 }} />
-                                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                                            <Chip size="small" label={`Updated ${new Date(project.updatedAt || Date.now()).toLocaleDateString()}`} />
-                                            <Chip size="small" variant="outlined" label={formatProjectSourceLabel(project.source)} />
-                                        </Stack>
-                                        <Stack direction="row" spacing={1}>
-                                            <Button
-                                                size="small"
-                                                variant="contained"
-                                                onClick={() => openProject(project.id)}
-                                            >
+                    {/* Projects */}
+                    {projects.length > 0 && (
+                        <Stack spacing={1.5}>
+                            <p className="sh-section-label">Projects — {projects.length}</p>
+                            <div className="sh-projects-grid">
+                                {projects.map((project) => (
+                                    <div key={project.id} className="sh-project-card">
+                                        <p className="sh-project-title">{project.title}</p>
+                                        <p className="sh-project-id">{project.id}</p>
+                                        <div className="sh-project-meta">
+                                            <span className="sh-meta-tag">
+                                                {new Date(project.updatedAt || Date.now()).toLocaleDateString()}
+                                            </span>
+                                            <span className="sh-meta-tag">
+                                                {formatProjectSourceLabel(project.source)}
+                                            </span>
+                                        </div>
+                                        <div className="sh-project-actions">
+                                            <button className="sh-btn-open" onClick={() => openProject(project.id)}>
                                                 Open
-                                            </Button>
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                color="error"
-                                                onClick={() => handleDeleteProject(project)}
-                                            >
+                                            </button>
+                                            <button className="sh-btn-delete" onClick={() => handleDeleteProject(project)}>
                                                 Delete
-                                            </Button>
-                                        </Stack>
-                                    </CardContent>
-                                </Card>
-                            </Grid>
-                        ))}
-                    </Grid>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </Stack>
+                    )}
+
                 </Stack>
             </Container>
         </Box>
