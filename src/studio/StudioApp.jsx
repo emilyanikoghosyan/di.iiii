@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { CssBaseline, GlobalStyles, ThemeProvider, createTheme } from '@mui/material'
 import StudioHub from './components/StudioHub.jsx'
-import StudioSpacesHub from './components/StudioSpacesHub.jsx'
 import StudioEditor from './components/StudioEditor.jsx'
 import {
     STUDIO_PAGE_SPACES,
