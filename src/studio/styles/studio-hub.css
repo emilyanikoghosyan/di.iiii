@@ -1,0 +1,182 @@
+/* Studio Hub — matches landing page aesthetic */
+
+.sh-header {
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--di-cyan-border);
+}
+
+.sh-eyebrow {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--di-cyan);
+    opacity: 0.65;
+    font-family: var(--di-mono);
+    margin: 0 0 10px;
+}
+
+.sh-title {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    color: var(--di-text);
+    margin: 0 0 10px;
+    line-height: 1.1;
+}
+
+.sh-desc {
+    font-size: 0.88rem;
+    color: var(--di-text-muted);
+    line-height: 1.7;
+    max-width: 520px;
+    margin: 0;
+}
+
+/* ─── CREATE PANEL ─────────────────────────────────────────── */
+.sh-create-panel {
+    border: 1px solid var(--di-cyan-border);
+    padding: 20px;
+    background: rgba(77, 249, 255, 0.02);
+}
+
+/* ─── STATUS ───────────────────────────────────────────────── */
+.sh-status {
+    font-size: 0.8rem;
+    color: var(--di-text-muted);
+    font-family: var(--di-mono);
+    letter-spacing: 0.02em;
+    padding: 6px 0;
+}
+
+.sh-status-error {
+    color: rgba(255, 109, 96, 0.8);
+}
+
+.sh-warn {
+    font-size: 0.8rem;
+    color: rgba(255, 200, 80, 0.7);
+    font-family: var(--di-mono);
+    border: 1px solid rgba(255, 200, 80, 0.15);
+    padding: 8px 12px;
+    line-height: 1.5;
+}
+
+/* ─── PROJECTS SECTION LABEL ───────────────────────────────── */
+.sh-section-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--di-cyan);
+    opacity: 0.55;
+    font-family: var(--di-mono);
+    margin: 0;
+}
+
+/* ─── PROJECT GRID ─────────────────────────────────────────── */
+.sh-projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1px;
+    background: var(--di-cyan-border);
+    border: 1px solid var(--di-cyan-border);
+}
+
+.sh-project-card {
+    background: var(--di-surface);
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 170px;
+    transition: background 0.1s;
+}
+
+.sh-project-card:hover {
+    background: rgba(77, 249, 255, 0.04);
+}
+
+.sh-project-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--di-text);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.sh-project-id {
+    font-size: 0.72rem;
+    color: var(--di-text-muted);
+    font-family: var(--di-mono);
+    word-break: break-all;
+    margin: 0;
+    opacity: 0.7;
+}
+
+.sh-project-meta {
+    margin-top: auto;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.sh-meta-tag {
+    font-size: 0.68rem;
+    color: var(--di-text-muted);
+    font-family: var(--di-mono);
+    letter-spacing: 0.04em;
+    border: 1px solid var(--di-cyan-border);
+    padding: 2px 7px;
+}
+
+.sh-project-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 4px;
+}
+
+.sh-btn-open {
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: var(--di-cyan);
+    color: #000;
+    border: none;
+    padding: 6px 14px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background 0.1s;
+    border-radius: 0;
+    font-family: inherit;
+}
+
+.sh-btn-open:hover { background: #fff; }
+
+.sh-btn-delete {
+    font-size: 0.78rem;
+    font-weight: 500;
+    background: transparent;
+    color: rgba(255, 109, 96, 0.5);
+    border: 1px solid rgba(255, 109, 96, 0.18);
+    padding: 5px 14px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: color 0.1s, border-color 0.1s;
+    border-radius: 0;
+    font-family: inherit;
+}
+
+.sh-btn-delete:hover {
+    color: rgba(255, 109, 96, 0.9);
+    border-color: rgba(255, 109, 96, 0.45);
+}
+
+/* ─── MUI OVERRIDES ────────────────────────────────────────── */
+.sh-create-panel .MuiOutlinedInput-root,
+.sh-create-panel .MuiOutlinedInput-notchedOutline {
+    border-radius: 0 !important;
+}
+
+.sh-create-panel .MuiButton-root {
+    border-radius: 0 !important;
+}
