@@ -19,14 +19,14 @@ Branch focus: active development on `dev`; promote through `staging` for live ve
 - World node (`universe.world`): panel window with embedded 3D scene, fullscreen mode, overlay mode (3D behind graph)
 - Studio editor: project hub, 3D scene, inspector, assets, spaces, undo/redo (Ctrl+Z/Y)
 - Auth: session-cookie login, role-based access, 8 s timeout
-- Deploy: push to `staging` → GitHub Actions `publish-cpanel-prebuilt-v2.yml` → builds → pushes `cpanel-staging` → cPanel auto-deploys
+- Deploy: push to `main` → GitHub Actions `publish-cpanel-prebuilt-v2.yml` → builds → pushes `cpanel-production` → cPanel auto-deploys
 - Docker: `docker compose up --build -d` runs full stack locally on port 8080 (Podman-compatible)
 - Space sync: `npm run space:new/pull/push` CLI scripts + `SpaceSyncPanel` UI in BetaHub (↓ get latest / ↑ publish buttons)
 - n000 space: pulled locally to `spaces/n000/scene.json` and `serverXR/data/spaces/n000/`
 
 ## What is broken / open
 
-- `deploy-staging-ssh.yml` always fails (SSH secrets not in GitHub) — ignore it, cPanel pipeline is the real path
+- Branch flow simplified to `dev → main` only; staging branch deleted
 - `↑ publish` button greys out until `LIVE_API_TOKEN` is set in `serverXR/.env.local`
 
 ## Space sync setup (per machine)
@@ -59,7 +59,7 @@ Then: `npm run space:pull -- n000` or use the buttons in the BetaHub UI.
 ## Deploy
 
 ```bash
-git checkout staging && git merge dev --no-edit && git push origin staging && git checkout dev
+git checkout main && git merge dev --no-edit && git push origin main && git checkout dev
 gh run list --workflow publish-cpanel-prebuilt-v2.yml
 ```
 
