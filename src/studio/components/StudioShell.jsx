@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import StudioInspector from './StudioInspector.jsx'
-import StudioPresentationSurface from './StudioPresentationSurface.jsx'
+import StudioViewportLayout from './StudioViewportLayout.jsx'
 import StudioFloatingPanel from './StudioFloatingPanel.jsx'
 import StudioControlCluster from './StudioControlCluster.jsx'
 import StudioQuickInsert from './StudioQuickInsert.jsx'
 import { useStudioPanelState } from '../hooks/useStudioPanelState.js'
+import { useViewportLayout } from '../hooks/useViewportLayout.js'
 import {
     ActivityPanel,
     AssetsPanel,
@@ -76,6 +77,7 @@ export default function StudioShell({
     onTransformCommit,
 }) {
     const { open, toggle, isOpen } = useStudioPanelState()
+    const { layout: vpLayout, split: vpSplit, close: vpClose, setRatio: vpSetRatio } = useViewportLayout()
     const [uiHidden, setUiHidden] = useState(false)
     const [viewportEditMode, setViewportEditMode] = useState('navigate')
     const [viewportGizmoMode, setViewportGizmoMode] = useState('translate')
@@ -183,22 +185,27 @@ export default function StudioShell({
         </button>
     )
 
+    const viewportShared = {
+        document,
+        selectedEntityId,
+        onSelectEntity,
+        cursors: presence?.cursors,
+        onCursorMove: presence?.emitCursor,
+        onCursorLeave: presence?.clearCursor,
+        xrStore: xrState?.xrStore,
+        editMode: viewportEditMode,
+        gizmoMode: viewportGizmoMode,
+        onTransformCommit,
+    }
+
     return (
         <div className="sfp-root" onDoubleClick={handleViewportDoubleClick}>
-            <StudioPresentationSurface
-                document={document}
-                selectedEntityId={selectedEntityId}
-                onSelectEntity={onSelectEntity}
-                cursors={presence?.cursors}
-                onCursorMove={presence?.emitCursor}
-                onCursorLeave={presence?.clearCursor}
-                cameraView={cameraView}
-                controlsRef={controlsRef}
-                xrStore={xrState?.xrStore}
-                onCameraChange={onCameraViewChange}
-                editMode={viewportEditMode}
-                gizmoMode={viewportGizmoMode}
-                onTransformCommit={onTransformCommit}
+            <StudioViewportLayout
+                layout={vpLayout}
+                onSplit={vpSplit}
+                onClose={vpClose}
+                onSetRatio={vpSetRatio}
+                shared={viewportShared}
             />
 
             {loading && (
