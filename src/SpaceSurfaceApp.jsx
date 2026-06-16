@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
-import App from './App.jsx'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { getServerSpace, supportsServerSpaces } from './services/serverSpaces.js'
 import { APP_PAGE_PREFERENCES } from './utils/spaceRouting.js'
-import PublicProjectViewer from './project/components/PublicProjectViewer.jsx'
+
+const App = lazy(() => import('./App.jsx'))
+const BlankNodeWorkspaceApp = lazy(() => import('./beta/BlankNodeWorkspaceApp.jsx'))
+const PublicProjectViewer = lazy(() => import('./project/components/PublicProjectViewer.jsx'))
 
 const DEFAULT_SPACE_ID = 'main'
 const SPACE_META_REFRESH_MS = 2000
@@ -96,20 +98,30 @@ export default function SpaceSurfaceApp({ routeState }) {
 
     const publishedProjectId = surfaceState.space?.publishedProjectId || null
 
-    if (shouldResolvePublishedSurface && surfaceState.status === 'loading' && !surfaceState.space) {
-        return <SurfaceLoadingScreen />
+    if (isLocalRootWorkspace) {
+        return (
+            <Suspense fallback={null}>
+                <BlankNodeWorkspaceApp spaceId={spaceId} />
+            </Suspense>
+        )
     }
 
     if (shouldResolvePublishedSurface && publishedProjectId) {
         return (
-            <PublicProjectViewer
-                key={`${spaceId}:${publishedProjectId}`}
-                spaceId={spaceId}
-                projectId={publishedProjectId}
-                spaceLabel={surfaceState.space?.label || spaceId}
-            />
+            <Suspense fallback={null}>
+                <PublicProjectViewer
+                    key={`${spaceId}:${publishedProjectId}`}
+                    spaceId={spaceId}
+                    projectId={publishedProjectId}
+                    spaceLabel={surfaceState.space?.label || spaceId}
+                />
+            </Suspense>
         )
     }
 
-    return <App />
+    if (page === APP_PAGE_PREFERENCES) {
+        return <Suspense fallback={null}><App /></Suspense>
+    }
+
+    return <Suspense fallback={null}><App /></Suspense>
 }

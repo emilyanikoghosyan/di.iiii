@@ -31,3 +31,54 @@ describe('normalizeClientApiToken', () => {
 grep -n 'VITE_API_TOKEN' ~/.config/dii/production.deploy.env`)).toBe('')
     })
 })
+
+describe('normalizeSessionApiToken', () => {
+    it('keeps server edit tokens trim-only so existing deployments can log in', () => {
+        expect(normalizeSessionApiToken(' Bearer dev-token ')).toBe('dev-token')
+        expect(normalizeSessionApiToken('abc')).toBe('abc')
+    })
+})
+
+describe('apiFetch auth sessions', () => {
+    it('includes browser credentials so http-only auth sessions can be used', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+        }))
+        vi.stubGlobal('fetch', fetchMock)
+
+        await apiFetch('/api/spaces')
+
+        expect(fetchMock).toHaveBeenCalledWith('http://localhost:3000/serverXR/api/spaces', expect.objectContaining({
+            credentials: 'include'
+        }))
+    })
+
+    it('throws on 401 without prompting the user', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'Unauthorized' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        }))
+        vi.stubGlobal('fetch', fetchMock)
+
+        await expect(apiFetch('/api/spaces', { method: 'POST', body: { label: 'Main' } }))
+            .rejects.toMatchObject({ status: 401 })
+        expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('throws on 403 without prompting the user', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+            error: 'Admin role required.',
+            requiredRole: 'admin',
+            currentRole: 'editor'
+        }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' }
+        }))
+        vi.stubGlobal('fetch', fetchMock)
+
+        await expect(apiFetch('/api/spaces/main', { method: 'PATCH', body: {} }))
+            .rejects.toMatchObject({ status: 403 })
+        expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+})
