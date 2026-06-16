@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { cloneValue } from '../../shared/projectSchema.js'
 
 const setNestedValue = (value, path, nextValue) => {
@@ -17,56 +17,79 @@ const readNestedValue = (value, path = []) =>
     path.reduce((cur, key) => cur?.[key], value)
 
 function InspNumber({ field, value, onChange }) {
-    const step = field.step ?? 0.1
-    const min = field.min ?? -Infinity
-    const max = field.max ?? Infinity
+    const baseStep = field.step ?? 0.1
+    const fieldMin = field.min ?? -Infinity
+    const fieldMax = field.max ?? Infinity
     const num = Number.isFinite(Number(value)) ? Number(value) : 0
     const intervalRef = useRef(null)
+    const inputRef = useRef(null)
 
-    const clamp = (v) => Math.min(max, Math.max(min, v))
+    // Keep latest values accessible inside stable listeners
+    const stateRef = useRef({ num, baseStep, fieldMin, fieldMax, onChange })
+    useEffect(() => { stateRef.current = { num, baseStep, fieldMin, fieldMax, onChange } })
 
-    const increment = useCallback((dir) => {
-        onChange(clamp(parseFloat((num + dir * step).toFixed(10))))
-    }, [num, step, min, max, onChange])
+    const resolveStep = (e) => {
+        const s = stateRef.current.baseStep
+        if (e.shiftKey) return s / 10
+        if (e.ctrlKey || e.metaKey) return s * 10
+        return s
+    }
 
+    const applyDelta = useCallback((dir, s) => {
+        const { num: n, fieldMin: lo, fieldMax: hi, onChange: cb } = stateRef.current
+        cb(Math.min(hi, Math.max(lo, parseFloat((n + dir * s).toFixed(10)))))
+    }, [])
+
+    // Hold-to-repeat for arrow buttons
     const startRepeat = (dir) => {
-        increment(dir)
-        intervalRef.current = setInterval(() => increment(dir), 80)
+        applyDelta(dir, stateRef.current.baseStep)
+        intervalRef.current = setInterval(() => applyDelta(dir, stateRef.current.baseStep), 80)
+    }
+    const stopRepeat = () => { clearInterval(intervalRef.current) }
+
+    // Keyboard arrows with modifier step
+    const handleKeyDown = (e) => {
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+        e.preventDefault()
+        applyDelta(e.key === 'ArrowUp' ? 1 : -1, resolveStep(e))
     }
 
-    const stopRepeat = () => {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-    }
+    // Non-passive scroll wheel (needs direct DOM listener)
+    useEffect(() => {
+        const el = inputRef.current
+        if (!el) return
+        const onWheel = (e) => {
+            if (document.activeElement !== el) return
+            e.preventDefault()
+            const s = stateRef.current.baseStep
+            const step = e.shiftKey ? s / 10 : (e.ctrlKey || e.metaKey) ? s * 10 : s
+            applyDelta(e.deltaY < 0 ? 1 : -1, step)
+        }
+        el.addEventListener('wheel', onWheel, { passive: false })
+        return () => el.removeEventListener('wheel', onWheel)
+    }, [applyDelta])
 
     return (
         <div className="insp-field">
             <label className="insp-label">{field.label}</label>
             <div className="insp-num-wrap">
                 <input
+                    ref={inputRef}
                     type="number"
                     className="insp-input insp-num-input"
                     value={num}
                     min={field.min}
                     max={field.max}
-                    step={step}
-                    onChange={(e) => onChange(clamp(Number(e.target.value)))}
+                    step={baseStep}
+                    onChange={(e) => {
+                        const v = Number(e.target.value)
+                        stateRef.current.onChange(Math.min(fieldMax, Math.max(fieldMin, v)))
+                    }}
+                    onKeyDown={handleKeyDown}
                 />
                 <div className="insp-num-arrows">
-                    <button
-                        className="insp-num-btn"
-                        onPointerDown={() => startRepeat(1)}
-                        onPointerUp={stopRepeat}
-                        onPointerLeave={stopRepeat}
-                        tabIndex={-1}
-                    >▲</button>
-                    <button
-                        className="insp-num-btn"
-                        onPointerDown={() => startRepeat(-1)}
-                        onPointerUp={stopRepeat}
-                        onPointerLeave={stopRepeat}
-                        tabIndex={-1}
-                    >▼</button>
+                    <button className="insp-num-btn" onPointerDown={() => startRepeat(1)} onPointerUp={stopRepeat} onPointerLeave={stopRepeat} tabIndex={-1}>▲</button>
+                    <button className="insp-num-btn" onPointerDown={() => startRepeat(-1)} onPointerUp={stopRepeat} onPointerLeave={stopRepeat} tabIndex={-1}>▼</button>
                 </div>
             </div>
         </div>
