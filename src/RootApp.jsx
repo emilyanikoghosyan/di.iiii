@@ -12,6 +12,7 @@ import { APP_PAGE_PREFERENCES, getAppLocationState } from './utils/spaceRouting.
 const BetaApp = lazy(() => import('./beta/BetaApp.jsx'))
 const LandingPage = lazy(() => import('./landing/LandingPage.jsx'))
 const StudioApp = lazy(() => import('./studio/StudioApp.jsx'))
+const WccLandingPage = lazy(() => import('./wcc/landing/LandingPage.jsx'))
 
 function ProtectedSurface({ children, requiredSpaceId = null }) {
     return <AuthGate requiredSpaceId={requiredSpaceId}>{children}</AuthGate>
@@ -87,6 +88,15 @@ function AppRouter() {
         return (
             <Suspense fallback={<RouteSurfaceFallback label="Loading" detail="" />}>
                 <LandingPage />
+            </Suspense>
+        )
+    }
+
+    const pathSegments = location.pathname.replace(/^\/+/, '').replace(/\/+$/, '').split('/')
+    if (appState.spaceId === 'wcc' && pathSegments.length === 1 && appState.page !== APP_PAGE_PREFERENCES) {
+        return (
+            <Suspense fallback={<RouteSurfaceFallback label="Loading" detail="" />}>
+                <WccLandingPage />
             </Suspense>
         )
     }
