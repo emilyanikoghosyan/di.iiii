@@ -248,7 +248,7 @@ export default function StudioShell({
                     )}
                     {isOpen('present') && (
                         <StudioFloatingPanel key={`present-${layoutKey}`} title="Present" onClose={() => toggle('present')} initialPosition={positions.present} initialWidth={360} minWidth={300} maxWidth={700} snapEdges={snapEdges}>
-                            <PresentPanel presentationState={document?.presentationState} onPresentationPatch={onPresentationPatch} onSaveCurrentCamera={onSaveCurrentCamera} assets={document?.assets || []} spaceAssets={spaceAssets} />
+                            <PresentPanel presentationState={document?.presentationState} onPresentationPatch={onPresentationPatch} onSaveCurrentCamera={onSaveCurrentCamera} />
                         </StudioFloatingPanel>
                     )}
                     {isOpen('publish') && (
