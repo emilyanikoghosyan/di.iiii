@@ -16,8 +16,15 @@ import { getServerSpace, updateServerSpace } from '../../services/serverSpaces.j
 import { buildStudioProjectPath, navigateToStudioPath } from '../utils/studioRouting.js'
 import '../styles/studio-hub.css'
 
-const formatDate = (iso) =>
-    new Date(iso || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+const formatRelativeDate = (iso) => {
+    const d = new Date(iso || Date.now())
+    const diff = Date.now() - d.getTime()
+    if (diff < 60000) return 'just now'
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
+    if (diff < 7 * 86400000) return `${Math.floor(diff / 86400000)}d ago`
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
 
 const formatSource = (source = '') => {
     switch (source) {
@@ -34,6 +41,7 @@ export default function StudioHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
     const [status, setStatus] = useState('loading...')
     const [isBusy, setIsBusy] = useState(false)
     const [spaceLabel, setSpaceLabel] = useState(spaceId)
+    const [creatingTitle, setCreatingTitle] = useState(null)
 
     const mostRecentProject = useMemo(() => projects[0] || null, [projects])
 
@@ -60,14 +68,18 @@ export default function StudioHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
     const openProject = (projectId) =>
         navigateToStudioPath(buildStudioProjectPath(projectId, spaceId))
 
-    const handleNew = async () => {
+    const handleNew = () => {
         if (isBusy) return
+        setCreatingTitle('')
+    }
+
+    const submitNew = async (title) => {
+        const name = title.trim() || 'Untitled'
+        setCreatingTitle(null)
         setIsBusy(true)
         setStatus('creating...')
         try {
-            const now = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-            const title = `Project ${now}`
-            const res = await createProject(spaceId, { title, slug: title, source: 'studio-v3' })
+            const res = await createProject(spaceId, { title: name, slug: name, source: 'studio-v3' })
             openProject(res.project.id)
         } catch (e) {
             setStatus(e.message || 'error')
@@ -129,9 +141,27 @@ export default function StudioHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
                         <p className="sh-space-context">Space: {spaceLabel}</p>
                         <h1 className="sh-title">Projects</h1>
                     </div>
-                    <button className="sh-btn-new" onClick={handleNew} disabled={isBusy}>
-                        + New
-                    </button>
+                    {creatingTitle === null ? (
+                        <button className="sh-btn-new" onClick={handleNew} disabled={isBusy}>
+                            + New
+                        </button>
+                    ) : (
+                        <form
+                            className="sh-new-form"
+                            onSubmit={e => { e.preventDefault(); submitNew(creatingTitle) }}
+                        >
+                            <input
+                                className="sh-new-input"
+                                autoFocus
+                                placeholder="Project name"
+                                value={creatingTitle}
+                                onChange={e => setCreatingTitle(e.target.value)}
+                                onKeyDown={e => e.key === 'Escape' && setCreatingTitle(null)}
+                            />
+                            <button className="sh-btn-new" type="submit">Create</button>
+                            <button className="sh-btn-cancel" type="button" onClick={() => setCreatingTitle(null)}>✕</button>
+                        </form>
+                    )}
                 </div>
 
                 {/* Secondary actions */}
@@ -159,9 +189,9 @@ export default function StudioHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
                     <span className="sh-sep">·</span>
                     <button className="sh-link" onClick={() => appNavigate(buildBetaHubPath(spaceId))}>Beta</button>
                     <span className="sh-sep">·</span>
-                    <button className="sh-link" onClick={() => appNavigate(buildPreferencesPath(spaceId))}>Admin</button>
+                    <button className="sh-link" onClick={() => appNavigate(buildPreferencesPath(spaceId))}>Settings</button>
                     <span className="sh-sep">·</span>
-                    <button className="sh-link" onClick={() => appNavigate(buildAppSpacePath(spaceId))}>Public</button>
+                    <button className="sh-link" onClick={() => appNavigate(buildAppSpacePath(spaceId))}>Live</button>
                 </div>
 
                 {/* Status */}
@@ -175,17 +205,25 @@ export default function StudioHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
                 {projects.length > 0 && (
                     <div className="sh-projects-grid">
                         {projects.map((project) => (
-                            <div key={project.id} className="sh-project-card">
+                            <div
+                                key={project.id}
+                                className="sh-project-card"
+                                onClick={() => openProject(project.id)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={e => e.key === 'Enter' && openProject(project.id)}
+                            >
                                 <p className="sh-project-title">{project.title}</p>
-                                <p className="sh-project-id">{project.id}</p>
                                 <div className="sh-project-meta">
-                                    <span className="sh-meta-tag">{formatDate(project.updatedAt)}</span>
+                                    <span className="sh-meta-tag">{formatRelativeDate(project.updatedAt)}</span>
                                     <span className="sh-meta-tag">{formatSource(project.source)}</span>
                                 </div>
-                                <div className="sh-project-actions">
-                                    <button className="sh-btn-open" onClick={() => openProject(project.id)}>Open</button>
-                                    <button className="sh-btn-delete" onClick={() => handleDelete(project)}>Delete</button>
-                                </div>
+                                <button
+                                    className="sh-btn-delete"
+                                    onClick={e => { e.stopPropagation(); handleDelete(project) }}
+                                    aria-label="Delete"
+                                    title="Delete project"
+                                >✕</button>
                             </div>
                         ))}
                     </div>
