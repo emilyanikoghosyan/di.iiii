@@ -7,16 +7,16 @@
 #   bash scripts/ollama-task.sh <tier> "<task>"
 #
 # Tiers and models:
-#   fast    → dob-fast:latest           (project system-prompt preset on qwen2.5-coder:7b — CSS tweaks, component Q&A)
-#   deep    → dob-deep:latest           (project system-prompt preset on qwen2.5-coder:7b — architecture, complex analysis)
+#   fast    → dob-fast:latest           (project system-prompt preset on qwen3:8b — CSS tweaks, component Q&A)
+#   deep    → dob-deep:latest           (project system-prompt preset on qwen3:8b — architecture, complex analysis)
 #   coder   → qwen2.5-coder:7b          (generic precision coder — test design, complex logic)
 #   general → qwen2.5:7b                (generic — mixed reasoning + code)
 #   tiny    → qwen2.5-coder:1.5b        (ultrafast — simple symbol search, yes/no questions)
 #
 # Model sizes are picked for an 8GB VRAM card. qwen3-coder:30b / qwen3.5
-# from the original spec do not fit in 8GB VRAM and were swapped for 7b variants.
+# from the original spec do not fit in 8GB VRAM and were swapped for 7b/8b variants.
 # dob-fast/dob-deep are not separately fine-tuned weights — they are
-# qwen2.5-coder:7b with the di.i system prompt baked in via Modelfile
+# qwen3:8b with the di.i system prompt baked in via Modelfile
 # (scripts/ollama/Modelfile.dob-fast, scripts/ollama/Modelfile.dob-deep).
 
 set -euo pipefail
