@@ -269,17 +269,23 @@ function HorizontalNavigation({ activeIndex, onActiveIndexChange, onOpen, onEnte
             const mm = gsap.matchMedia()
             mm.add('(min-width: 801px)', () => {
                 const vw = () => scrollerRef.current?.clientWidth ?? window.innerWidth
+                const travel = () => Math.max(0, track.scrollWidth - vw())
                 gsap.to(track, {
-                    x: () => `-${Math.max(0, track.scrollWidth - vw())}px`,
+                    x: () => `-${travel()}px`,
                     ease: 'none',
                     scrollTrigger: {
                         trigger: section,
                         scroller: scrollerRef.current,
                         start: 'top top',
-                        end: () => `+=${Math.max(0, track.scrollWidth - vw())}`,
+                        end: () => `+=${travel() * 2}`,
                         pin: true,
-                        anticipatePin: 1,
-                        scrub: 0.65,
+                        scrub: true,
+                        snap: {
+                            snapTo: 1 / (panels.length - 1),
+                            duration: { min: 0.2, max: 0.5 },
+                            delay: 0.05,
+                            ease: 'power2.inOut',
+                        },
                         invalidateOnRefresh: true,
                         onEnter: () => scrollerRef.current?.classList.add('wcc-in-pin'),
                         onLeaveBack: () => scrollerRef.current?.classList.remove('wcc-in-pin'),
