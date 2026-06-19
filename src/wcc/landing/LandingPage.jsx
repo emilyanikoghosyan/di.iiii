@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import * as THREE from 'three'
@@ -54,6 +54,12 @@ const getRouteSection = () => {
     return routeSectionIds.has(section) ? section : null
 }
 
+const prefersReducedMotion = () => (
+    typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+)
+
 const buildSectionPath = (sectionId) => {
     if (typeof window === 'undefined') return '/wcc'
     const nextUrl = new URL(window.location.href)
@@ -84,7 +90,7 @@ function WebglVeil() {
         const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100)
         camera.position.z = 5
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true })
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6))
         renderer.setClearColor(0x000000, 0)
         mount.appendChild(renderer.domElement)
@@ -123,20 +129,29 @@ function WebglVeil() {
             renderer.setSize(width, height)
         }
 
+        const reduced = prefersReducedMotion()
         let frameId = 0
         const clock = new THREE.Clock()
         const tick = () => {
-            const elapsed = clock.getElapsedTime()
-            field.rotation.y = elapsed * 0.025 + pointer.x
-            field.rotation.x = elapsed * 0.015 + pointer.y
-            renderer.render(scene, camera)
+            // Skip GPU work while the tab is hidden; keep the loop alive cheaply.
+            if (!document.hidden) {
+                const elapsed = clock.getElapsedTime()
+                field.rotation.y = elapsed * 0.025 + pointer.x
+                field.rotation.x = elapsed * 0.015 + pointer.y
+                renderer.render(scene, camera)
+            }
             frameId = window.requestAnimationFrame(tick)
         }
 
         resize()
-        tick()
         window.addEventListener('resize', resize)
-        window.addEventListener('pointermove', onPointerMove)
+        if (reduced) {
+            // Honour reduced-motion: render one static frame, no animation loop.
+            renderer.render(scene, camera)
+        } else {
+            tick()
+            window.addEventListener('pointermove', onPointerMove)
+        }
 
         return () => {
             window.cancelAnimationFrame(frameId)
@@ -171,9 +186,17 @@ function BackgroundRippleField({ ripples }) {
     )
 }
 
-function EnterExhibitionButton({ className = '' }) {
+function EnterExhibitionButton({ className = '', onEnter = null }) {
+    const handleClick = (event) => {
+        if (onEnter) {
+            event.preventDefault()
+            onEnter(event)
+            return
+        }
+        handleAppLinkClick(event, '/wcc/scene')
+    }
     return (
-        <a className={`wcc-enter-button ${className}`} href="/wcc/scene" onClick={(event) => handleAppLinkClick(event, '/wcc/scene')}>
+        <a className={`wcc-enter-button ${className}`} href="/wcc/scene" onClick={handleClick}>
             Enter exhibition
         </a>
     )
@@ -187,7 +210,7 @@ function ScrollArrow({ onClick }) {
     )
 }
 
-function LandingHero() {
+function LandingHero({ onEnter = null }) {
     return (
         <section className="wcc-hero" aria-labelledby="wcc-title">
             <p className="wcc-hero__kicker">Creative Lab • Mentorship • Exhibition</p>
@@ -198,15 +221,20 @@ function LandingHero() {
             {landingContent.subtitle ? <p className="wcc-hero__subtitle">{landingContent.subtitle}</p> : null}
             <div className="wcc-hero__footer">
                 <span>Scroll to navigate</span>
-                <EnterExhibitionButton />
+                <EnterExhibitionButton onEnter={onEnter} />
             </div>
         </section>
     )
 }
 
-function NavigationPanel({ panel, index, active, onOpen }) {
+function NavigationPanel({ panel, index, active, onOpen, onEnter = null }) {
     const handleClick = (event) => {
         if (panel.href) {
+            if (onEnter) {
+                event.preventDefault()
+                onEnter(event)
+                return
+            }
             handleAppLinkClick(event, panel.href)
             return
         }
@@ -228,56 +256,75 @@ function NavigationPanel({ panel, index, active, onOpen }) {
     )
 }
 
-function HorizontalNavigation({ activeIndex, onActiveIndexChange, onOpen, scrollerRef }) {
+function HorizontalNavigation({ activeIndex, onActiveIndexChange, onOpen, onEnter = null, scrollerRef }) {
+    const wrapperRef = useRef(null)
     const sectionRef = useRef(null)
     const trackRef = useRef(null)
 
     useLayoutEffect(() => {
+        const wrapper = wrapperRef.current
         const section = sectionRef.current
         const track = trackRef.current
-        if (!section || !track) return undefined
+        if (!wrapper || !section || !track) return undefined
 
         const ctx = gsap.context(() => {
             const mm = gsap.matchMedia()
             mm.add('(min-width: 801px)', () => {
+                const vw = () => scrollerRef.current?.clientWidth ?? window.innerWidth
+                const travel = () => Math.max(0, track.scrollWidth - vw())
+                const syncHeight = () => { wrapper.style.height = `calc(100vh + ${travel() * 2}px)` }
+                syncHeight()
+
                 gsap.to(track, {
-                    x: () => `-${Math.max(0, track.scrollWidth - window.innerWidth)}px`,
+                    x: () => `-${travel()}px`,
                     ease: 'none',
                     scrollTrigger: {
-                        trigger: section,
+                        trigger: wrapper,
                         scroller: scrollerRef.current,
                         start: 'top top',
-                        end: () => `+=${track.scrollWidth}`,
-                        pin: true,
-                        scrub: 0.65,
+                        end: () => `+=${travel() * 2}`,
+                        scrub: true,
+                        snap: {
+                            snapTo: 1 / (panels.length - 1),
+                            duration: { min: 0.2, max: 0.5 },
+                            delay: 0.2,
+                            ease: 'power2.inOut',
+                        },
                         invalidateOnRefresh: true,
+                        onRefresh: syncHeight,
+                        onEnter: () => scrollerRef.current?.classList.add('wcc-in-pin'),
+                        onLeaveBack: () => scrollerRef.current?.classList.remove('wcc-in-pin'),
+                        onLeave: () => scrollerRef.current?.classList.remove('wcc-in-pin'),
                         onUpdate: (self) => {
                             const next = Math.min(panels.length - 1, Math.round(self.progress * (panels.length - 1)))
                             onActiveIndexChange(next)
                         }
                     }
                 })
+                return () => { wrapper.style.height = '' }
             })
-            return () => mm.revert()
         }, section)
 
         return () => ctx.revert()
     }, [onActiveIndexChange, scrollerRef])
 
     return (
-        <section className="wcc-horizontal" ref={sectionRef} aria-label="Exhibition navigation">
-            <div className="wcc-panel-track" ref={trackRef}>
-                {panels.map((panel, index) => (
-                    <NavigationPanel
-                        active={activeIndex === index}
-                        index={index}
-                        key={panel.id}
-                        onOpen={onOpen}
-                        panel={panel}
-                    />
-                ))}
-            </div>
-        </section>
+        <div className="wcc-horizontal-wrapper" ref={wrapperRef}>
+            <section className="wcc-horizontal" ref={sectionRef} aria-label="Exhibition navigation">
+                <div className="wcc-panel-track" ref={trackRef}>
+                    {panels.map((panel, index) => (
+                        <NavigationPanel
+                            active={activeIndex === index}
+                            index={index}
+                            key={panel.id}
+                            onEnter={onEnter}
+                            onOpen={onOpen}
+                            panel={panel}
+                        />
+                    ))}
+                </div>
+            </section>
+        </div>
     )
 }
 
@@ -358,7 +405,7 @@ function AboutProject() {
                             onClick={() => setProcessColor(true)}
                             aria-label={`Reveal process image ${index + 1} in color`}
                         >
-                            <img src={image.src} alt={image.alt} />
+                            <img src={image.src} alt={image.alt} loading="lazy" decoding="async" />
                         </button>
                     ))}
                 </div>
@@ -376,6 +423,24 @@ function AboutProject() {
 
 function SectionReveal({ sectionId, onClose }) {
     const shellRef = useRef(null)
+    const closeRef = useRef(null)
+
+    // Keyboard support for the full-screen overlay: Escape closes it, focus
+    // moves to the Close control on open and is restored to the trigger on close.
+    useEffect(() => {
+        if (!sectionId) return undefined
+        const previousFocus = document.activeElement
+        const onKeyDown = (event) => {
+            if (event.key === 'Escape') onClose?.()
+        }
+        document.addEventListener('keydown', onKeyDown)
+        closeRef.current?.focus()
+        return () => {
+            document.removeEventListener('keydown', onKeyDown)
+            if (previousFocus instanceof HTMLElement) previousFocus.focus?.()
+        }
+    }, [sectionId, onClose])
+
     if (!sectionId) return null
 
     const panel = panels.find((item) => item.id === sectionId)
@@ -385,10 +450,10 @@ function SectionReveal({ sectionId, onClose }) {
     }
 
     return (
-        <section className={`wcc-reveal wcc-reveal--${sectionId}`} ref={shellRef} aria-label={panel?.label || 'Section'}>
+        <section className={`wcc-reveal wcc-reveal--${sectionId}`} ref={shellRef} role="dialog" aria-modal="true" aria-label={panel?.label || 'Section'}>
             <div className="wcc-reveal__chrome">
                 <span>{panel?.label}</span>
-                <button type="button" onClick={onClose}>Close</button>
+                <button type="button" ref={closeRef} onClick={onClose}>Close</button>
             </div>
             <div className={`wcc-reveal__body wcc-reveal__body--${sectionId}`}>
                 {sectionId === 'artist-works' ? null : <h2>{panel?.label}</h2>}
@@ -399,7 +464,7 @@ function SectionReveal({ sectionId, onClose }) {
     )
 }
 
-export default function LandingPage() {
+export default function LandingPage({ onEnterExhibition = null }) {
     const rootRef = useRef(null)
     const cursorRef = useRef(null)
     const particleLayerRef = useRef(null)
@@ -408,14 +473,14 @@ export default function LandingPage() {
     const [openSection, setOpenSection] = useState(() => getRouteSection())
     const [ripples, setRipples] = useState([])
 
-    const openRouteSection = (sectionId) => {
+    const openRouteSection = useCallback((sectionId) => {
         if (!routeSectionIds.has(sectionId)) return
         setOpenSection(sectionId)
         if (typeof window === 'undefined') return
         window.history.pushState({ wccSection: sectionId }, '', buildSectionPath(sectionId))
-    }
+    }, [])
 
-    const closeRouteSection = () => {
+    const closeRouteSection = useCallback(() => {
         setOpenSection(null)
         if (typeof window === 'undefined') return
         if (window.history.state?.wccSection) {
@@ -423,18 +488,21 @@ export default function LandingPage() {
             return
         }
         window.history.replaceState(window.history.state, '', buildSectionPath(null))
-    }
+    }, [])
 
     const scrollLanding = () => {
         const root = rootRef.current
         if (!root) return
-        const viewport = root.clientHeight || window.innerHeight
-        const targets = [viewport, viewport * 2.08, root.scrollHeight - viewport]
-            .filter((value, index, values) => value > root.scrollTop + 24 && values.indexOf(value) === index)
-        const nextTop = targets[0] ?? 0
+        // Step to the next real section below the current scroll position,
+        // measured from the live layout (robust to the pinned horizontal nav).
+        const rootTop = root.getBoundingClientRect().top
+        const sectionTops = [...root.querySelectorAll('.wcc-hero, .wcc-horizontal')]
+            .map((el) => Math.round(el.getBoundingClientRect().top - rootTop + root.scrollTop))
+        sectionTops.push(Math.max(0, root.scrollHeight - root.clientHeight))
+        const nextTop = sectionTops.find((top) => top > root.scrollTop + 24) ?? 0
         root.scrollTo({
             top: nextTop,
-            behavior: 'smooth'
+            behavior: prefersReducedMotion() ? 'auto' : 'smooth'
         })
     }
 
@@ -443,6 +511,8 @@ export default function LandingPage() {
         if (!root) return undefined
 
         const ctx = gsap.context(() => {
+            // Reduced-motion: leave everything at its natural resting state.
+            if (prefersReducedMotion()) return
             gsap.from('.wcc-hero__kicker, .wcc-hero h1 span, .wcc-hero__subtitle, .wcc-hero__footer', {
                 y: 56,
                 opacity: 0,
@@ -463,7 +533,7 @@ export default function LandingPage() {
                 delay: 0.12,
                 ease: 'elastic.out(0.62, 0.32)'
             })
-            gsap.to('.wcc-circle.is-hero', {
+            gsap.to('.wcc-circle-parallax.is-hero .wcc-circle', {
                 x: 34,
                 y: -46,
                 rotation: 8,
@@ -471,9 +541,10 @@ export default function LandingPage() {
                 delay: 2.6,
                 ease: 'sine.inOut',
                 repeat: -1,
-                yoyo: true
+                yoyo: true,
+                overwrite: 'auto'
             })
-            gsap.to('.wcc-circle.is-right', {
+            gsap.to('.wcc-circle-parallax.is-right .wcc-circle', {
                 x: -42,
                 y: 36,
                 rotation: -10,
@@ -481,7 +552,8 @@ export default function LandingPage() {
                 delay: 2.8,
                 ease: 'sine.inOut',
                 repeat: -1,
-                yoyo: true
+                yoyo: true,
+                overwrite: 'auto'
             })
         }, root)
 
@@ -524,9 +596,10 @@ export default function LandingPage() {
         const cursor = cursorRef.current
         if (!cursor) return undefined
         const root = rootRef.current
+        const reduced = prefersReducedMotion()
         const moveX = gsap.quickTo(cursor, 'x', { duration: 0.5, ease: 'power3.out' })
         const moveY = gsap.quickTo(cursor, 'y', { duration: 0.5, ease: 'power3.out' })
-        const circles = gsap.utils.toArray('.wcc-circle')
+        const circles = gsap.utils.toArray('.wcc-circle-parallax')
         const circleTweens = circles.map((circle, index) => ({
             xTo: gsap.quickTo(circle, 'x', { duration: 0.9 + index * 0.03, ease: 'power3.out' }),
             yTo: gsap.quickTo(circle, 'y', { duration: 0.9 + index * 0.03, ease: 'power3.out' })
@@ -535,6 +608,7 @@ export default function LandingPage() {
             if (rootRef.current?.classList.contains('is-scrolling')) return
             moveX(event.clientX)
             moveY(event.clientY)
+            if (reduced) return
             const xRatio = event.clientX / window.innerWidth - 0.5
             const yRatio = event.clientY / window.innerHeight - 0.5
             circleTweens.forEach(({ xTo, yTo }, index) => {
@@ -568,15 +642,19 @@ export default function LandingPage() {
                     })
             }
             if (!dot) return
-            gsap.fromTo(dot, { scale: 0.92 }, { scale: 1.18, duration: 0.42, yoyo: true, repeat: 1, ease: 'power3.out' })
             rootRef.current?.classList.toggle('is-black-bg')
+            if (reduced) return
+            gsap.fromTo(dot, { scale: 0.92 }, { scale: 1.18, duration: 0.42, yoyo: true, repeat: 1, ease: 'power3.out' })
 
             const layer = particleLayerRef.current
             if (!layer) return
+            // Cap concurrent particles so rapid clicking can't pile up DOM nodes.
+            const burst = Math.min(30, Math.max(0, 150 - layer.childElementCount))
+            if (burst === 0) return
             const rect = dot.getBoundingClientRect()
             const originX = rect.left + rect.width * 0.5
             const originY = rect.top + rect.height * 0.5
-            Array.from({ length: 30 }).forEach((_, index) => {
+            Array.from({ length: burst }).forEach((_, index) => {
                 const particle = document.createElement('span')
                 const size = gsap.utils.random(7, 28)
                 const pageBottom = Math.max(rootRef.current?.scrollHeight || 0, window.innerHeight)
@@ -641,14 +719,11 @@ export default function LandingPage() {
         <main className="wcc-landing" ref={rootRef}>
             <WebglVeil />
             <BackgroundRippleField ripples={ripples} />
-            <div className="wcc-circle-field" aria-label="Interactive WCC themes">
+            <div className="wcc-circle-field" aria-hidden="true">
                 {circleItems.map((circle) => (
-                    <button
-                        className={`wcc-circle ${circle.className}`}
-                        key={circle.className}
-                        type="button"
-                        aria-label={circle.label}
-                    />
+                    <div className={`wcc-circle-parallax ${circle.className}`} key={circle.className}>
+                        <span className="wcc-circle" />
+                    </div>
                 ))}
             </div>
             <div className="wcc-ambient-dots" aria-hidden="true">
@@ -659,10 +734,11 @@ export default function LandingPage() {
             <div className="wcc-particle-layer" ref={particleLayerRef} aria-hidden="true" />
             <div className="wcc-cursor" ref={cursorRef} aria-hidden="true" />
             <ScrollArrow onClick={scrollLanding} />
-            <LandingHero />
+            <LandingHero onEnter={onEnterExhibition} />
             <HorizontalNavigation
                 activeIndex={activeIndex}
                 onActiveIndexChange={setActiveIndex}
+                onEnter={onEnterExhibition}
                 onOpen={openRouteSection}
                 scrollerRef={rootRef}
             />
