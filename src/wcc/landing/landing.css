@@ -432,7 +432,6 @@
     z-index: 2;
     min-height: 100vh;
     overflow: hidden;
-    scroll-snap-align: start;
 }
 
 .wcc-panel-track {
@@ -1098,6 +1097,10 @@
         min-height: 240px;
     }
 
+}
+
+.wcc-landing.wcc-in-pin {
+    scroll-behavior: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {

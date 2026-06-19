@@ -281,6 +281,9 @@ function HorizontalNavigation({ activeIndex, onActiveIndexChange, onOpen, onEnte
                         anticipatePin: 1,
                         scrub: 0.65,
                         invalidateOnRefresh: true,
+                        onEnter: () => scrollerRef.current?.classList.add('wcc-in-pin'),
+                        onLeaveBack: () => scrollerRef.current?.classList.remove('wcc-in-pin'),
+                        onLeave: () => scrollerRef.current?.classList.remove('wcc-in-pin'),
                         onUpdate: (self) => {
                             const next = Math.min(panels.length - 1, Math.round(self.progress * (panels.length - 1)))
                             onActiveIndexChange(next)
