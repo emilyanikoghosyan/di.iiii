@@ -3,8 +3,12 @@ import gsap from 'gsap'
 import LandingPage from './landing/LandingPage.jsx'
 import './wccExperience.css'
 
-const WccExhibition = lazy(() => import('./scene/WccExhibition.jsx'))
+// The exhibition is the Studio-authored `wcc` project, rendered by the shared
+// public viewer. The 2D landing dives into it in place (no page reload).
+const PublicProjectViewer = lazy(() => import('../project/components/PublicProjectViewer.jsx'))
 
+const WCC_SPACE_ID = 'wcc'
+const WCC_PROJECT_ID = 'wcc'
 const SCENE_PATH = '/wcc/scene'
 const LANDING_PATH = '/wcc'
 
@@ -70,7 +74,7 @@ export default function WccExperience({ initialMode = 'landing' }) {
             duration: 0.6,
             ease: 'power2.in'
         }, 0)
-        // Black warp flash to hide the swap.
+        // Red->black warp flash to hide the swap.
         if (overlay) {
             tl.fromTo(overlay, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.in' }, 0.45)
         }
@@ -106,8 +110,15 @@ export default function WccExperience({ initialMode = 'landing' }) {
                     style={mode === 'entering' ? { opacity: 0 } : undefined}
                 >
                     <Suspense fallback={null}>
-                        <WccExhibition onExit={exitExhibition} />
+                        <PublicProjectViewer
+                            spaceId={WCC_SPACE_ID}
+                            projectId={WCC_PROJECT_ID}
+                            spaceLabel="WCC · Women Creating Change"
+                        />
                     </Suspense>
+                    <button type="button" className="wcc-experience__exit" onClick={exitExhibition}>
+                        ← Exit exhibition
+                    </button>
                 </div>
             ) : null}
 

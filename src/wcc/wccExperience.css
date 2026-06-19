@@ -16,6 +16,31 @@
     z-index: 10;
 }
 
+/* Return-to-landing control layered over the published viewer. */
+.wcc-experience__exit {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    z-index: 15;
+    appearance: none;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(0, 0, 0, 0.4);
+    color: #ffffff;
+    font: inherit;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    padding: 9px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: background-color 220ms ease, border-color 220ms ease;
+}
+
+.wcc-experience__exit:hover {
+    background: #d90000;
+    border-color: #d90000;
+}
+
 /* Full-screen warp flash that hides the 2D -> 3D swap. */
 .wcc-experience__warp {
     position: fixed;
