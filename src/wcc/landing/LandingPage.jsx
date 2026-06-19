@@ -268,15 +268,17 @@ function HorizontalNavigation({ activeIndex, onActiveIndexChange, onOpen, onEnte
         const ctx = gsap.context(() => {
             const mm = gsap.matchMedia()
             mm.add('(min-width: 801px)', () => {
+                const vw = () => scrollerRef.current?.clientWidth ?? window.innerWidth
                 gsap.to(track, {
-                    x: () => `-${Math.max(0, track.scrollWidth - window.innerWidth)}px`,
+                    x: () => `-${Math.max(0, track.scrollWidth - vw())}px`,
                     ease: 'none',
                     scrollTrigger: {
                         trigger: section,
                         scroller: scrollerRef.current,
                         start: 'top top',
-                        end: () => `+=${track.scrollWidth}`,
+                        end: () => `+=${Math.max(0, track.scrollWidth - vw())}`,
                         pin: true,
+                        anticipatePin: 1,
                         scrub: 0.65,
                         invalidateOnRefresh: true,
                         onUpdate: (self) => {
