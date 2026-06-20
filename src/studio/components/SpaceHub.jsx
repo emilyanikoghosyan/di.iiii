@@ -302,6 +302,7 @@ export default function SpaceHub() {
                                                     {linker.projects.map(p => (
                                                         <div key={p.id} className={`ssh-linker-item${space.publishedProjectId === p.id ? ' is-linked' : ''}`}>
                                                             {linker.renamingId === p.id ? (
+                                                                // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
                                                                 <form
                                                                     className="ssh-linker-rename-form"
                                                                     onSubmit={e => { e.preventDefault(); handleSubmitRenameProject(p.id) }}

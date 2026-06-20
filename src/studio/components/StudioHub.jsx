@@ -248,6 +248,7 @@ export default function StudioHub({ spaceId = DEFAULT_PROJECT_SPACE_ID }) {
                                     onKeyDown={e => e.key === 'Enter' && !isRenaming && openProject(project.id)}
                                 >
                                     {isRenaming ? (
+                                        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
                                         <form
                                             className="sh-rename-form"
                                             onSubmit={e => submitRename(project.id, e)}
