@@ -90,6 +90,17 @@ const spawnProcess = (command, args, options = {}) => {
     })
 }
 
+const printCheatsheet = async () => {
+    try {
+        const raw = await readFile(path.join(repoRoot, 'CHEATSHEET.md'), 'utf8')
+        console.log(`\n${raw.trim()}\n`)
+    } catch {
+        // optional — skip if the file is missing
+    }
+}
+
+await printCheatsheet()
+
 const serverEnvFile = await parseEnvFile(path.join(serverRoot, '.env'))
 const defaultServerPort = Number(serverEnvFile.PORT || 4000)
 const defaultServerBasePath = normalizeBasePath(serverEnvFile.APP_BASE_PATH || '/serverXR')
