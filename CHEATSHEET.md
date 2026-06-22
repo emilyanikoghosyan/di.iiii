@@ -14,6 +14,8 @@ Quick reference. Full context: `CURRENT.md` (read it first) → `AGENTS.md` → 
 
 ```bash
 npm run dev                          # start frontend (5173) + backend (4000)
+npm run dev:browser                  # same, but also opens a fresh wiped Chromium profile
+                                      # (closes/wipes on Ctrl+C — needs flatpak Chromium, Linux only)
 npm run lint                         # eslint src/
 npm run build                        # vite production build
 npm run test -- --run                # full vitest suite
