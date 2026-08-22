@@ -195,6 +195,19 @@ export const WIKI_ARTICLES = [
         updated: '2026-08-02'
     },
     {
+        id: 'walkable-areas',
+        category: 'Editing',
+        title: 'Keeping visitors inside the space',
+        summary: 'A space can declare where the floor is, so a visitor walking in first person cannot wander out through a wall and get lost in empty world.',
+        body: [
+            'Walk mode lets a visitor move freely, which in a space with real architecture means they can walk straight through a wall and end up in open nothing with no landmark to walk back to. A space can now declare its walkable floor plan — the corridor, and each room off it — and the visitor simply cannot leave it.',
+            'Walking into a wall at an angle slides along it rather than stopping dead, so it feels like a room and not like an invisible box. Rooms that adjoin each other stay open to each other, so you always keep the run of the space.',
+            'Spaces that do not declare a floor plan are unchanged: visitors roam as freely as they always have. This is data on the space, so it travels with a published project.'
+        ],
+        tags: ['walk', 'vr', 'exhibition', 'space', 'navigation'],
+        updated: '2026-08-20'
+    },
+    {
         id: 'spatial-video-sound',
         category: 'Editing',
         title: 'Video sound you can walk toward',
@@ -437,10 +450,12 @@ export const WIKI_ARTICLES = [
                 '/wcc — the exhibition landing page: about text, session recaps, and the participating artists’ works with concept statements.',
                 '/wcc/scene — the 3D gallery experience showing those works in-world.',
                 'Public when the wcc space is marked public (same server-verified isPublic check as any other space) — otherwise it falls back to the normal sign-in gate.'
-            ] }
+            ] },
+            'The scene is laid out as a corridor rather than a ring: you arrive at the entrance and walk forward down a single white spine, meeting the ten artists in numbered order, each in their own lit bay off the sides. Every bay is marked by a red ribbon that runs down the wall and unrolls across the floor. The walk ends in a rotunda holding the exhibition beacon.',
+            'Each artist’s project is embedded exactly as they authored it — the corridor only places, aims and scales it so that ten very differently-sized works (measured extents ran from 2.3m to 31m) each read at a comparable size in an equal bay. Arrival is set by worldState.spawn, so every visitor starts at the mouth of the corridor facing down it, and the corridor declares its own floor plan so nobody can wander out of it (see “Keeping visitors inside the space”).'
         ],
         tags: ['wcc', 'exhibition', 'linked-space', 'art'],
-        updated: '2026-07-15'
+        updated: '2026-08-20'
     },
     {
         id: 'algovrithm',
@@ -468,6 +483,27 @@ export const WIKI_ARTICLES = [
         updated: '2026-08-04'
     },
     {
+        id: 'henry',
+        category: 'Spaces & access',
+        title: 'henry — a two-minute dream you walk through',
+        summary: 'henry at /henry is a code-authored space: a very small girl in a very large garden, and what the garden turns out to be.',
+        body: [
+            'henry is a short interactive film rather than a game. A very small girl walks through an enormous dream garden, reaches a tree with deer under it, finds a plush bear the size of a hill and brushes its teeth, and then the dream quietly stops being kind. She takes off her glasses and the giant world turns out to be an ordinary room with houseplants in it. She puts them back on. It runs about 1:55.',
+            { list: [
+                '/henry — the experience. Built the same way as algovrithm: a real space routed through the same server-verified public/private check, whose scene is code in src/henry/ rather than a project document. The Studio editor has nothing to open for this space.',
+                'Walk with WASD or the arrow keys, drag to look around, press E when something is waiting. There is no other interface: a soft ring on the ground is the only prompt the piece ever shows, and it appears for exactly one thing at a time.',
+                'It is a screen piece, not a headset piece, and deliberately so. The camera performs — it sits below the girl’s shoulder and tilts up to make the world tower over her, and it pulls back and rises for the reveal. Camera moves like that are the whole language of the ending and they are exactly what you must never do to someone wearing a headset, so there is no Enter VR here. A VR cut would need a different camera contract (the world moves, the viewer never does) and would be a different edit, not a flag.'
+            ] },
+            'The piece is six beats on one playhead, in src/henry/timeline.js. Some beats end on the clock; others run their animation and then WAIT for the player, holding their final state until the interaction happens. So a visitor who plays along sees a two-minute film and a visitor who wanders off and looks at a flower for five minutes never sees it break — the world just keeps breathing until they arrive. No timer is shown and nothing can be failed.',
+            'Everything the scene draws is procedural — petals, leaves, blobs and tapers built from parametric surfaces in src/henry/geometry.js. Nothing is loaded from disk. Partly that is so the silhouettes come from the piece’s own references rather than from an asset store, but mostly it is because every giant dream object has to survive being scaled to a fortieth of itself at the reveal and still read as the ordinary thing it turns out to be, and that only works if the shapes were authored as one family with controllable proportions.',
+            'The reveal has exactly one trick, and it is in src/henry/dual.js: every giant dream object and the ordinary object it "turns out to be" are the same mesh at two scales. There is no cut, no second scene and no crossfade — the enormous lily and the houseplant by the window are one object, and the transition is an interpolation between its two sizes played while the camera pulls back. Scale interpolates logarithmically rather than linearly, so the world shrinks at a constant rate instead of staying huge and then collapsing in the last few frames. The girl herself never changes size, which is what keeps her animation, her movement and her camera in one unit system for the whole piece.',
+            'Three global dials — dream, strange and black — are written once per frame and read by every object in the scene. They live in a mutable ref rather than in React state: in state, moving one flower would re-render the entire dream sixty times a second. React only hears about the piece at all when a beat changes, which is five times in two minutes.',
+            'The look is flat painted rather than lit: MeshToonMaterial with a hand-built three-stop ramp, almost no directional light, and a screen-space paper grain over the whole image. The grain is doing more work than it looks — a clean render is the single thing that most reliably makes a stylised scene read as "3D asset" instead of as picture, and it stays on at half strength in the real world too, because it is the piece’s paper rather than the dream’s.'
+            ],
+        tags: ['henry', 'three.js', 'r3f', 'linked-space', 'code', 'narrative', 'scale'],
+        updated: '2026-08-21'
+    },
+    {
         id: 'platform-typeface',
         category: 'For developers',
         title: 'The platform typeface',
@@ -485,6 +521,24 @@ export const WIKI_ARTICLES = [
         ],
         tags: ['typography', 'montserrat', 'design-system', 'css', 'mui', 'fonts'],
         updated: '2026-08-10'
+    },
+    {
+        id: 'proximity-lighting',
+        category: 'Editing',
+        title: 'Lights that come on as you walk up',
+        summary: 'An object can stay dark until a visitor is near it and come up as they approach — gallery lighting, one work at a time.',
+        body: [
+            'A lamp over a picture does not have to burn all day. Give an entity a proximity setting and it is off from across the room, comes up as a visitor walks toward it, and goes back down behind them. A corridor of rooms then reads the way a gallery does: dark until you step in, lit while you are looking, dark again once you leave.',
+            { list: [
+                'radius — how far away it is completely off. Beyond this nothing is lit.',
+                'falloff — the last stretch of the approach over which it comes up. Full brightness starts at radius minus falloff.',
+                'min — how dim it goes when nobody is near. Leave it at 0 for fully off, or lift it a little to keep a work just visible from the doorway.'
+            ] },
+            'It scales two things at once: the intensity of a light entity, and the emissive glow or opacity of any surface under it. That second half matters more than it sounds — an image or video plane is drawn unlit, so a real light shining on a photograph changes nothing you can see. A lamp that reads on a wall of pictures is therefore usually two pieces: the fixture itself, whose glow comes up, and a warm panel behind the work that fades in with it.',
+            'Anything without the setting is unaffected and stays lit as it always was. The dimming follows the visitor in walk mode and inside embedded projects; the Studio editor deliberately shows everything at its authored brightness, so you can place a lamp without having to stand next to it.'
+        ],
+        tags: ['light', 'walk', 'vr', 'exhibition', 'proximity', 'gallery'],
+        updated: '2026-08-21'
     }
 ]
 

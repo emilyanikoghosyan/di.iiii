@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { appNavigate } from '../../utils/appNavigate.js'
 import { useViewportMode } from '../../hooks/useViewportMode.js'
 import { landingContent } from './content.js'
+import ProcessField from './ProcessField.jsx'
 import './landing.css'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -375,6 +376,10 @@ function ArtistWorks({ lang = 'en' }) {
 
 function AboutProject({ lang = 'en' }) {
     const [processColor, setProcessColor] = useState(false)
+    const { viewportMode, prefersReducedMotion } = useViewportMode()
+    /* Same gate WebglVeil uses. Phones and reduced-motion get the CSS masonry,
+       which is the accessible, keyboard-reachable version of this gallery. */
+    const useField = viewportMode !== 'mobile' && !prefersReducedMotion
     const isHy = lang === 'hy'
 
     return (
@@ -450,21 +455,25 @@ function AboutProject({ lang = 'en' }) {
                     beyond the duration of the project.
                 </p>
             )}
-            <div className={`wcc-process-gallery ${processColor ? 'is-color' : ''}`}>
-                <div className="wcc-process-gallery__grid">
-                    {processImages.map((image, index) => (
-                        <button
-                            className={`wcc-process-photo${image.rotatePortrait ? ' is-rotated-portrait' : ''}`}
-                            key={image.src}
-                            type="button"
-                            onClick={() => setProcessColor(true)}
-                            aria-label={`Reveal process image ${index + 1} in color`}
-                        >
-                            <img src={image.src} alt={image.alt} loading="lazy" />
-                        </button>
-                    ))}
+            {useField ? (
+                <ProcessField images={processImages} />
+            ) : (
+                <div className={`wcc-process-gallery ${processColor ? 'is-color' : ''}`}>
+                    <div className="wcc-process-gallery__grid">
+                        {processImages.map((image, index) => (
+                            <button
+                                className={`wcc-process-photo${image.rotatePortrait ? ' is-rotated-portrait' : ''}`}
+                                key={image.src}
+                                type="button"
+                                onClick={() => setProcessColor(true)}
+                                aria-label={`Reveal process image ${index + 1} in color`}
+                            >
+                                <img src={image.src} alt={image.alt} loading="lazy" />
+                            </button>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
             <SupportedBy lang={lang} inAbout />
         </div>
     )

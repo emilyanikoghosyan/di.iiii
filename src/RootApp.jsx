@@ -10,6 +10,7 @@ import useSpacePublicFlag from './hooks/useSpacePublicFlag.js'
 import useResolveSlugProject from './hooks/useResolveSlugProject.js'
 import { getStudioLocationState, isStudioLocation } from './studio/utils/studioRouting.js'
 import { ALGO_VRITHM_SPACE_ID, isAlgoVrithmSegment } from './algoVrithm/algoVrithmRouting.js'
+import { HENRY_SPACE_ID, isHenrySegment } from './henry/henryRouting.js'
 import { APP_PAGE_EDITOR, APP_PAGE_PREFERENCES, APP_PAGE_WIKI, getAppLocationState } from './utils/spaceRouting.js'
 
 const BetaApp = lazy(() => import('./beta/BetaApp.jsx'))
@@ -18,6 +19,7 @@ const LandingPage = lazy(() => import('./landing/LandingPage.jsx'))
 const StudioApp = lazy(() => import('./studio/StudioApp.jsx'))
 const WccExperience = lazy(() => import('./wcc/WccExperience.jsx'))
 const AlgoVrithmExperience = lazy(() => import('./algoVrithm/AlgoVrithmExperience.jsx'))
+const HenryExperience = lazy(() => import('./henry/HenryExperience.jsx'))
 const WikiPage = lazy(() => import('./wiki/WikiPage.jsx'))
 // AuthGate pulls in MUI + AccountButton -- lazy so public routes (landing,
 // wiki, any public space) that never render a gate don't pay for MUI in
@@ -121,6 +123,28 @@ function AlgoVrithmSurfaceRoute() {
     return <ProtectedSurface requiredSpaceId={ALGO_VRITHM_SPACE_ID}>{content}</ProtectedSurface>
 }
 
+// Same shape again: henry is a real space whose contents are code rather than
+// a project document, so the public/private decision comes from the server.
+function HenrySurfaceRoute() {
+    const { isPublic, loading } = useSpacePublicFlag(HENRY_SPACE_ID)
+
+    if (loading) {
+        return <RouteSurfaceFallback label="Loading" detail="" />
+    }
+
+    const content = (
+        <Suspense fallback={<RouteSurfaceFallback label="Loading" detail="" />}>
+            <HenryExperience />
+        </Suspense>
+    )
+
+    if (isPublic) {
+        return content
+    }
+
+    return <ProtectedSurface requiredSpaceId={HENRY_SPACE_ID}>{content}</ProtectedSurface>
+}
+
 function AppRouter() {
     const rrNavigate = useNavigate()
     useEffect(() => {
@@ -219,6 +243,13 @@ function AppRouter() {
         && pathSegments.length === 1
     if (isAlgoVrithmSurface) {
         return <AlgoVrithmSurfaceRoute />
+    }
+
+    const isHenrySurface = isHenrySegment(appState.spaceId)
+        && appState.page !== APP_PAGE_PREFERENCES
+        && pathSegments.length === 1
+    if (isHenrySurface) {
+        return <HenrySurfaceRoute />
     }
 
     if (appState.projectSlugSegment) {

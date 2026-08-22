@@ -771,7 +771,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-content: start;
     gap: clamp(20px, 3vw, 44px) clamp(32px, 5vw, 80px);
-    max-width: 1120px;
+    /* No cap — the about body runs out to the reveal padding. Was 1120px, which
+       left ~700px empty on the right at 1920 and ~1350px at 2560. Column count
+       and the full-row sessions stay exactly as they were; only the width grows. */
+    max-width: none;
 }
 
 .wcc-text-columns--about p {
@@ -1214,4 +1217,58 @@
         transition-duration: 0.001ms !important;
         scroll-behavior: auto !important;
     }
+}
+
+/* ---------------------------------------------------------------------------
+   PROCESS FIELD — the WebGL version of the process gallery (ProcessField.jsx).
+   Desktop only; phones and prefers-reduced-motion keep .wcc-process-gallery.
+   --------------------------------------------------------------------------- */
+
+.wcc-process-field {
+    position: relative;
+    grid-column: 1 / -1;
+    /* Tall enough that the scatter has somewhere to scatter to, capped so it
+       never eats a whole tall monitor. Raised alongside the bigger planes —
+       same photo count in more room means less overlap, so a given photo is
+       easier to aim at. */
+    height: clamp(460px, 78vh, 900px);
+    margin: 8px 0;
+    /* The canvas is its own pointer surface: it has to swallow the move events
+       the field reacts to, but the reveal body still needs to scroll past it. */
+    touch-action: pan-y;
+}
+
+.wcc-process-field canvas {
+    display: block;
+    cursor: crosshair;
+}
+
+/* Visually hidden, still focusable and still read aloud. Not display:none and
+   not visibility:hidden — either would drop these buttons out of the tab order,
+   which is the entire point of them. */
+.wcc-process-field__controls {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.wcc-process-field__controls button {
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    /* The plane lighting up and its red ring are the focus indicator; a browser
+       outline on a 1px clipped button would be invisible anyway. */
+    outline: 0;
 }
