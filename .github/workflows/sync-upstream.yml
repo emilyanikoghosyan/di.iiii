@@ -1,0 +1,82 @@
+name: Sync dev from upstream
+
+# Lives on the fork's `main` on purpose: GitHub only runs `schedule` from the
+# default branch, and `dev` has to stay a byte-for-byte copy of dob-0/di.iiii
+# `dev` — this file must never be there.
+#
+# Fast-forward or nothing. NOT `gh repo sync`: that calls merge-upstream and
+# accepts a merge commit when the fork's `dev` has drifted without a textual
+# conflict — it exits 0 and nobody hears about it. Here the drift check comes
+# first, and the merge is only accepted if GitHub reports it as a fast-forward.
+# If the fork's `dev` ever carries a commit upstream does not have, the run
+# fails and GitHub mails the owner. That failure IS the signal; never force.
+#
+# SYNC_TOKEN: a fine-grained token scoped to this one repository with
+# Contents: write and Workflows: write. The built-in GITHUB_TOKEN cannot bring
+# in upstream changes to .github/workflows/, and those change often.
+#
+# The fork's inherited deploy workflows (deploy-vps*.yml, deploy-space-code.yml)
+# must stay DISABLED in this repo's Actions settings: on the fork they cannot
+# deploy, but they do publish images under the owner's account, and their
+# `land` job commits to `dev` — which is exactly the drift this guards against.
+
+on:
+  schedule:
+    - cron: '23 * * * *'   # hourly, off the top of the hour (GitHub drops :00 jobs under load)
+  workflow_dispatch:
+
+permissions: {}   # GITHUB_TOKEN gets nothing; SYNC_TOKEN does the one write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+env:
+  FORK: emilyanikoghosyan/di.iiii
+  UPSTREAM: dob-0/di.iiii
+  BRANCH: dev
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fast-forward dev from dob-0/di.iiii
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::SYNC_TOKEN is not set — see the comment at the top of this workflow"
+            exit 1
+          fi
+          if ! gh api "repos/$FORK" --jq .full_name >/dev/null 2>&1; then
+            echo "::error::SYNC_TOKEN was rejected — expired or revoked? Make a new one (see the top of this workflow)"
+            exit 1
+          fi
+
+          want=$(gh api "repos/$UPSTREAM/git/ref/heads/$BRANCH" --jq .object.sha)
+          have=$(gh api "repos/$FORK/git/ref/heads/$BRANCH" --jq .object.sha)
+          if [ "$want" = "$have" ]; then
+            echo "$BRANCH already at $want"
+            exit 0
+          fi
+
+          # base = the fork's dev, head = upstream's dev. "ahead" means every
+          # commit on the fork's dev is already in upstream's: a fast-forward.
+          owner=${FORK%%/*}
+          status=$(gh api "repos/$UPSTREAM/compare/$owner:$BRANCH...$BRANCH" --jq .status)
+          case "$status" in
+            ahead) ;;
+            identical) echo "$BRANCH already at $want"; exit 0 ;;
+            *)
+              echo "::error::$FORK $BRANCH has drifted from $UPSTREAM $BRANCH (compare: $status). It carries commits upstream does not have — nothing was changed. Move them to a branch, then reset $BRANCH to upstream by hand."
+              exit 1 ;;
+          esac
+
+          merge=$(gh api -X POST "repos/$FORK/merge-upstream" -f "branch=$BRANCH" --jq .merge_type)
+          case "$merge" in
+            fast-forward|none) echo "$BRANCH: $have -> $want ($merge)" ;;
+            *)
+              echo "::error::GitHub reported merge_type=$merge instead of a fast-forward. $BRANCH now has a merge commit — reset it to $UPSTREAM $BRANCH by hand."
+              exit 1 ;;
+          esac
